@@ -1,14 +1,13 @@
-import java.util.StringJoiner
-
 /**
- * vamos considerar que todos os elementos vao ter o nome, embora no inicial nao vamos evr nome
- * jarray composto
- * parent
- * perguntar ao professor se JSON ELEMENT melhor ser abstract ou interface (e faz se duas vezes o init)
- * parte do Number ter de ser int ou float, resolver com o "f"?
- * no enunciado diz que a propriedade numero so pode ter numeros inteiros, mas na documentaçao diz que o Number pode ser float ou Int
+ * confirmar se a forma como fizemos esta certo
  * com o generico no JSONLeaf da problemas no visitor -> so conseguimos definir um tipo
+ * as fun de search a usar os visitor estao feitas corretamente?
+ * nos testes na funçao de obter os valores associados as propriedades, temos uma lista de JSONElements, por isso
+ * ao comparar uma lista de 2 objectos com o resultado, embora seja o mesmo nao vai dar certo por nao serem data classes
+ * Testatasmos a comparar os values?
+ * Na funçao para obter os objetos associados às propriedades, podemos fazer a pesquisa toda quando entramos no composto
  * **/
+
 interface Visitor {
     fun visit(jsonLeaf: JSONLeaf) {}
     fun visit(jsonComposite: JSONComposite) {}
@@ -179,6 +178,10 @@ fun JSONObject.getJSONObjectWithProperty(list: List<String>): MutableList<JSONOb
 
         override fun visit(jsonComposite: JSONComposite) {
             val name = propertyMap[depth]?.removeFirstOrNull()
+            //if(list.contains(name)) counter++
+            //if (propertyMap[depth]?.size == 0 && counter == list.size) elementList.add(parentMap[depth] as JSONObject)
+            //println(parentMap[depth])
+
             if(jsonComposite is JSONObject) {
                 counter = 0
                 propertyMap[++depth] = jsonComposite.elements.keys.toMutableList()
@@ -186,12 +189,34 @@ fun JSONObject.getJSONObjectWithProperty(list: List<String>): MutableList<JSONOb
             }
         }
 
+        /** override fun endVisit(jsonComposite: JSONComposite) {
+            if(jsonComposite is JSONObject && counter == list.size) elementList.add(jsonComposite as JSONObject)
+        } **/
+
 
     }
     this.accept(result)
     return result.elementList
 }
 
+fun JSONObject.getJSONObjectWithPropertyAlt(list: List<String>): MutableList<JSONObject> {
+    val result = object : Visitor {
+        var elementList = mutableListOf<JSONObject>()
+        private var counter = 0
+
+        override fun visit(jsonComposite: JSONComposite) {
+            counter = 0
+            if (jsonComposite is JSONObject) {
+                jsonComposite.elements.keys.forEach {
+                    if(list.contains(it)) counter++
+                }
+                if(counter == list.size && list.isNotEmpty()) elementList.add(jsonComposite)
+            }
+        }
+    }
+    this.accept(result)
+    return result.elementList
+}
 
 //TODO perceber como fazer a virgula dos ] }
 fun JSONElement.getStructure() : String {
@@ -261,9 +286,16 @@ fun main() {
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
 
+    /**
     val t1 = jobject.getValuesByProperty("numero")
     t1.forEach { println(it) }
     val t2 = jobject.getJSONObjectWithProperty(listOf("numero", "nome"))
     t2.forEach { println(it.toString()) }
+    **/
+
+    //println(jobject.getStructure())
+
+    val t3 = jobject.getJSONObjectWithPropertyAlt(listOf("data-exame"))
+    println(t3)
 }
 
