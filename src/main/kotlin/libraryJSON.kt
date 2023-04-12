@@ -1,3 +1,5 @@
+import java.util.StringJoiner
+
 /**
  * confirmar se a forma como fizemos esta certo
  * com o generico no JSONLeaf da problemas no visitor -> so conseguimos definir um tipo
@@ -9,68 +11,20 @@
  * **/
 
 interface Visitor {
-    fun visit(jsonLeaf: JSONLeaf) {}
+    fun visit(jsonLeaf: JSONLeaf<*>) {}
     fun visit(jsonComposite: JSONComposite) {}
     fun endVisit(jsonComposite: JSONComposite) {}
 
 }
 interface JSONElement {
     fun accept(visitor: Visitor) {}
-
-    /**
-    val toText: String
-        get() {
-            var text = ""
-
-            if(this != null) {
-                text = name
-            } else if (this is JSONObject) {
-                text = "{"
-            }
-
-
-            fun JSONElement.aux(prefix: String) {
-                if(this is JSONComposite) {
-                    children.forEach {
-                        //text += prefix + " " + it.name + (if(it is JSONLeaf) " : " + it.value + "," else if(it is JSONObject) " {" else " [")
-                        if (it.name == null) {
-                            when (it) {
-                                is JSONObject -> text += "$prefix  { "
-                                is JSONArray -> text += "$prefix [ "
-                            }
-                        }
-                        else {
-                            when (it) {
-                                is JSONLeaf -> text += prefix + it.name + " : " + it.value + ","
-                                is JSONObject -> text += prefix + it.name + " : " + " { "
-                                is JSONArray -> text += prefix + it.name + " : " + " [ "
-                            }
-                        }
-
-                        if (it is JSONComposite) {
-                            it.aux("$prefix \t")
-                        }
-                    }
-
-                    when(this) {
-                        is JSONObject -> text += "$prefix }"
-                        is JSONArray -> text += "$prefix ]"
-                    }
-
-                }
-            }
-
-            this.aux("\n")
-            return text
-        }
-    **/
 }
 
 abstract class JSONComposite : JSONElement {
     abstract val elements: Any
 }
 
-abstract class JSONLeaf (val value: Any?) : JSONElement {
+abstract class JSONLeaf<T> (val value: T) : JSONElement {
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
     }
@@ -112,89 +66,54 @@ class JSONArray() : JSONComposite() {
         return elements.toString()
     }
 }
-class JSONString(value: String) : JSONLeaf(value) {
+class JSONString(value: String) : JSONLeaf<String>(value) {
     override fun toString(): String {
         return "\"" + value.toString() + "\""
     }
 }
-class JSONNumber(value: Number) : JSONLeaf(value) {
+class JSONNumber(value: Number) : JSONLeaf<Number>(value) {
     override fun toString(): String {
         return value.toString()
     }
 }
-class JSONBoolean(value: Boolean) :JSONLeaf(value) {
+class JSONBoolean(value: Boolean) :JSONLeaf<Boolean>(value) {
     override fun toString(): String {
         return value.toString()
     }
 }
-class JSONNull : JSONLeaf(null) {
+class JSONNull : JSONLeaf<Any?>(null) {
     override fun toString(): String {
         return "null" // ??
     }
 }
 
-fun JSONObject.getValuesByProperty(property: String): List<JSONElement>{
+fun JSONObject.getValuesByProperty(property: String): List<JSONElement> {
     val result = object : Visitor {
         var elementList = mutableListOf<JSONElement>()
         private var depth: Int = 0
         private val propertyMap = mutableMapOf<Int, MutableList<String>>()
 
 
-        override fun visit(jsonLeaf: JSONLeaf) {
+        override fun visit(jsonLeaf: JSONLeaf<*>) {
             val name = propertyMap[depth]?.removeFirst()
-            if(name == property) {
+            if (name == property) {
                 elementList.add(jsonLeaf)
             }
         }
 
         override fun visit(jsonComposite: JSONComposite) {
             val name = propertyMap[depth]?.removeFirstOrNull()
-            if(name == property) {
-                elementList.add(jsonComposite) // fazemos um toString aqui ou?
+            if (name == property) {
+                elementList.add(jsonComposite)
             }
-            if(jsonComposite is JSONObject) {
+            if (jsonComposite is JSONObject) {
                 propertyMap[++depth] = jsonComposite.elements.keys.toMutableList()
             }
         }
 
-        
-    }
-    this.accept(result)
-    return result.elementList
-}
-fun JSONObject.getJSONObjectWithProperty(list: List<String>): MutableList<JSONObject> {
-    val result = object : Visitor {
-        var elementList = mutableListOf<JSONObject>()
-        private var depth: Int = 0
-        private val propertyMap = mutableMapOf<Int, MutableList<String>>()
-        private val parentMap = mutableMapOf<Int, JSONComposite>()
-        private var counter = 0
-
-        override fun visit(jsonLeaf: JSONLeaf) {
-            val name = propertyMap[depth]?.removeFirst()
-            if(list.contains(name)) counter++
-            if (propertyMap[depth]?.size == 0 && counter == list.size) elementList.add(parentMap[depth] as JSONObject)
-        }
-
-        override fun visit(jsonComposite: JSONComposite) {
-            val name = propertyMap[depth]?.removeFirstOrNull()
-            //if(list.contains(name)) counter++
-            //if (propertyMap[depth]?.size == 0 && counter == list.size) elementList.add(parentMap[depth] as JSONObject)
-            //println(parentMap[depth])
-
-            if(jsonComposite is JSONObject) {
-                counter = 0
-                propertyMap[++depth] = jsonComposite.elements.keys.toMutableList()
-                parentMap[depth] = jsonComposite
-            }
-        }
-
-        /** override fun endVisit(jsonComposite: JSONComposite) {
-            if(jsonComposite is JSONObject && counter == list.size) elementList.add(jsonComposite as JSONObject)
-        } **/
-
 
     }
+
     this.accept(result)
     return result.elementList
 }
@@ -214,30 +133,28 @@ fun JSONObject.getJSONObjectWithPropertyAlt(list: List<String>): MutableList<JSO
             }
         }
     }
+
     this.accept(result)
     return result.elementList
 }
 
-//TODO perceber como fazer a virgula dos ] }
 fun JSONElement.getStructure() : String {
     val structure = object  : Visitor {
         var structure: String = ""
         private var prefix: String = ""
         private var prefix2: String= ""
-        private var prefix3: String = ""
         private var depth: Int = 0
         private val propertyMap = mutableMapOf<Int, MutableList<String>>()
 
-        override fun visit(jsonLeaf: JSONLeaf) {
+        override fun visit(jsonLeaf: JSONLeaf<*>) {
             val name = propertyMap[depth]?.removeFirst()
             structure += prefix2 + "\n" + prefix + (if(name.isNullOrEmpty()) "" else "\"$name\" : ") + jsonLeaf
-            prefix3 = ","
             prefix2 = ","
         }
 
         override fun visit(jsonComposite: JSONComposite) {
             if (structure.isNotEmpty()) {
-                structure += "\n"
+                structure += prefix2 + "\n"
             }
 
             val name = propertyMap[depth]?.removeFirstOrNull()
@@ -251,11 +168,9 @@ fun JSONElement.getStructure() : String {
         }
 
         override fun endVisit(jsonComposite: JSONComposite) {
-            //prefix3 = if(depth == 0) "," else ""
             depth--
             prefix = prefix.dropLast(1)
-            structure += "\n" + prefix + (if (jsonComposite is JSONObject) "}" else "]") + prefix3
-            prefix3 = ""
+            structure += "\n" + prefix + (if (jsonComposite is JSONObject) "}" else "]")
 
         }
     }
@@ -282,6 +197,12 @@ fun main() {
     jobject3.addElement("nome", JSONString("Martin Fowler"))
     jobject3.addElement("internacional", JSONBoolean(true))
 
+    val jobject4 = JSONObject()
+    jarray.addElement(jobject4)
+    jobject4.addElement("numero", JSONNumber(26503))
+    jobject4.addElement("nome", JSONString("André Santo"))
+    jobject4.addElement("internacional", JSONBoolean(false))
+
     val jarray2 = JSONArray()
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
@@ -291,11 +212,12 @@ fun main() {
     t1.forEach { println(it) }
     val t2 = jobject.getJSONObjectWithProperty(listOf("numero", "nome"))
     t2.forEach { println(it.toString()) }
-    **/
-
-    //println(jobject.getStructure())
-
     val t3 = jobject.getJSONObjectWithPropertyAlt(listOf("data-exame"))
     println(t3)
+    **/
+
+    println(jobject.getStructure())
+
+
 }
 

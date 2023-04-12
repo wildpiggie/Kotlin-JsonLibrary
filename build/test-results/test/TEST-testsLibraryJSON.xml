@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="testsLibraryJSON" tests="1" skipped="0" failures="0" errors="0" timestamp="2023-04-11T22:25:38" hostname="LAPTOP-06D2U8CH" time="0.032">
+<testsuite name="testsLibraryJSON" tests="1" skipped="0" failures="0" errors="0" timestamp="2023-04-12T12:22:44" hostname="LAPTOP-06D2U8CH" time="0.036">
   <properties/>
-  <testcase name="testSearch()" classname="testsLibraryJSON" time="0.032"/>
+  <testcase name="testSearch()" classname="testsLibraryJSON" time="0.036"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
