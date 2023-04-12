@@ -9,10 +9,10 @@ data class StudentObject(
 )
 
 data class ClassObject(
-    private val uc: UC,
-    private val ects: Number,
-    private val dataExame: String?,
-    private val inscritos: MutableCollection<StudentObject> = mutableListOf()
+    val uc: UC,
+    val ects: Number,
+    val dataExame: String?,
+    val inscritos: MutableCollection<StudentObject> = mutableListOf()
 ) {
     fun addInscrito(value: StudentObject) = inscritos.add(value)
 }

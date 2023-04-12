@@ -1,0 +1,18 @@
+{
+	"uc" : "uc",
+	"ects" : 6.0,
+	"dataExame" : null,
+	"inscritos" : [
+
+		101101,
+		"Dave Farley",
+		true,
+
+		101102,
+		"Martin Fowler",
+		true,
+			26503,
+		"André Santos",
+		false
+	]
+}

@@ -1,10 +1,11 @@
-import java.util.StringJoiner
 import kotlin.reflect.KClass
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.typeOf
 
 /**
  * confirmar se a forma como fizemos esta certo
@@ -153,7 +154,7 @@ fun JSONElement.getStructure() : String {
         private val propertyMap = mutableMapOf<Int, MutableList<String>>()
 
         override fun visit(jsonLeaf: JSONLeaf<*>) {
-            val name = propertyMap[depth]?.removeFirst()
+            val name = propertyMap[depth]?.removeFirstOrNull()
             structure += prefix2 + "\n" + prefix + (if(name.isNullOrEmpty()) "" else "\"$name\" : ") + jsonLeaf
             prefix2 = ","
         }
@@ -202,9 +203,38 @@ val <T : Any> KClass<T>.enumConstants: List<T> get() {
     return java.enumConstants.toList()
 }
 
-class JSONGenerator(){
-
+fun Any.toJSON(): JSONObject{
+    val rootObject = JSONObject()
+    val list = this::class.dataClassFields
+    list.forEach {
+        val element: JSONElement = it.mapElement(this)
+        rootObject.addElement(it.name, element)
+    }
+    return rootObject
 }
+
+fun KProperty<*>.mapElement(parent: Any): JSONElement =
+    when {
+        (this.returnType == typeOf<Number>()) -> JSONNumber(this.call(parent) as Number)
+        //(this.returnType == typeOf<String>()) -> JSONString(this.call(parent) as String) CHAR?
+        (this.returnType == typeOf<String>()) -> JSONString(this.call(parent) as String) //ou usar CharSequence?
+        (this.returnType == typeOf<Boolean>()) -> JSONBoolean(this.call(parent) as Boolean)
+        (this.returnType.classifier.isEnum) -> JSONString(this.name)
+        (this.returnType == typeOf<Map<String, *>>()) -> JSONArray() // fazer
+        (this.returnType.isSubtypeOf(typeOf<Iterable<*>>())) -> (this.call(parent) as Iterable<Any>).getArrayElements() //adicionar elementos
+        (this.returnType.classifier is KClass<*> && (this.returnType.classifier as KClass<*>).isData) -> this.call(parent)!!.toJSON()
+        else -> JSONNull()
+    }
+
+    fun Iterable<Any>.getArrayElements(): JSONArray{
+        val jsonArray = JSONArray()
+        this.forEach { arrayElement ->
+            arrayElement::class.dataClassFields.forEach {
+                jsonArray.addElement(it.mapElement(arrayElement))
+            }
+        }
+        return jsonArray
+    }
 
 fun main() {
     val jobject = JSONObject()
@@ -231,6 +261,8 @@ fun main() {
     jobject4.addElement("numero", JSONNumber(26503))
     jobject4.addElement("nome", JSONString("André Santo"))
     jobject4.addElement("internacional", JSONBoolean(false))
+
+    println(jobject.getStructure())
 
     val jarray2 = JSONArray()
     jarray2.addElement(JSONString("E1"))
