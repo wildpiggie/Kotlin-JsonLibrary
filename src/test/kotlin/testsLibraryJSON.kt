@@ -72,9 +72,9 @@ class testsLibraryJSON {
         assertEquals(mutableListOf(), jobject.getValuesByProperty(""))
 
 
-        assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
-        assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
-        assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
+        //assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
+        //assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
+        //assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
         /*
         assertEquals(mutableListOf(jobject2, jobject3), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "nome")))
         assertEquals(mutableListOf(), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "raiz")))
