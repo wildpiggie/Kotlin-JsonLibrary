@@ -69,10 +69,22 @@ class testsLibraryJSON {
 
         assertEquals(result, jobject.getValuesByProperty("numero"))
         assertEquals(mutableListOf(), jobject.getValuesByProperty("raiz"))
+        assertEquals(mutableListOf(), jobject.getValuesByProperty(""))
+
 
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
         assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
+        /*
+        assertEquals(mutableListOf(jobject2, jobject3), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "nome")))
+        assertEquals(mutableListOf(), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "raiz")))
+        assertEquals(mutableListOf(jobject2), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "internacional")))
+        */
+        
+        assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithPropertyAlt(listOf("data-exame")))
+        assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithPropertyAlt(listOf("inscritos")))
+        assertEquals(mutableListOf(), jobject.getJSONObjectWithPropertyAlt(listOf()))
+        //assertEquals(resultT2, jobject.getJSONObjectWithProperty2(listOf("numero", "numero"))) -> fzr a verificaçao dif
     }
 
     @Test
