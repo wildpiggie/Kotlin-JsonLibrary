@@ -7,10 +7,10 @@ import kotlin.test.assertEquals
 class testsLibraryJSON {
 
     private var jobject = JSONObject()
+    private var studentArray = JSONArray()
     private var student1 = JSONObject()
     private var student2 = JSONObject()
     private var student3 = JSONObject()
-    private var studentArray = JSONArray()
 
     @BeforeTest
     fun createHierarchy() {
@@ -19,8 +19,10 @@ class testsLibraryJSON {
         jobject.addElement("ects", JSONNumber(6.0))
         jobject.addElement("data-exame", JSONNull())
 
+        studentArray = JSONArray()
         jobject.addElement("inscritos", studentArray)
 
+        student1 = JSONObject()
         studentArray.addElement(student1)
         student1.addElement("numero", JSONNumber(101101))
         student1.addElement("nome", JSONString("Dave Farley"))
