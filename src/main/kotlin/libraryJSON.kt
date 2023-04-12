@@ -1,4 +1,10 @@
 import java.util.StringJoiner
+import kotlin.reflect.KClass
+import kotlin.reflect.KClassifier
+import kotlin.reflect.KProperty
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * vamos considerar que todos os elementos vao ter o nome, embora no inicial nao vamos evr nome
@@ -186,7 +192,6 @@ fun JSONObject.getJSONObjectWithProperty(list: List<String>): MutableList<JSONOb
             }
         }
 
-
     }
     this.accept(result)
     return result.elementList
@@ -237,6 +242,29 @@ fun JSONElement.getStructure() : String {
     this.accept(structure)
     return structure.structure
 }
+
+val KClass<*>.dataClassFields: List<KProperty<*>>
+    get() {
+        require(isData) { "instance must be data class" }
+        return primaryConstructor!!.parameters.map { p ->
+            declaredMemberProperties.find { it.name == p.name }!!
+        }
+    }
+
+// saber se um KClassifier é um enumerado
+val KClassifier?.isEnum: Boolean
+    get() = (this is KClass<*>) && this.isSubclassOf(Enum::class)
+
+// obter uma lista de constantes de um tipo enumerado
+val <T : Any> KClass<T>.enumConstants: List<T> get() {
+    require(isEnum) { "instance must be enum" }
+    return java.enumConstants.toList()
+}
+
+class JSONGenerator(){
+
+}
+
 fun main() {
     val jobject = JSONObject()
     jobject.addElement("uc", JSONString("PA"))
@@ -261,9 +289,13 @@ fun main() {
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
 
+    /*
     val t1 = jobject.getValuesByProperty("numero")
     t1.forEach { println(it) }
     val t2 = jobject.getJSONObjectWithProperty(listOf("numero", "nome"))
     t2.forEach { println(it.toString()) }
+    */
+
+
 }
 
