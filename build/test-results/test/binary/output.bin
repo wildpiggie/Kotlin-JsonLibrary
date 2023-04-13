@@ -1,18 +1,20 @@
 {
-	"uc" : "uc",
-	"ects" : 6.0,
-	"dataExame" : null,
-	"inscritos" : [
-
-		101101,
-		"Dave Farley",
-		true,
-
-		101102,
-		"Martin Fowler",
-		true,
-			26503,
-		"André Santos",
-		false
+	"uc" : "PGMV",
+	"numberAsString" : "99",
+	"lie" : false,
+	"student" : {
+		"numero" : 0,
+		"nome" : "A",
+		"internacional" : true
+	},
+	"list" : [
+		{
+			"numero" : 1,
+			"nome" : "S",
+			"internacional" : false
+		},
+		null,
+		null,
+		null
 	]
 }

@@ -1,10 +1,7 @@
 import kotlin.reflect.KClass
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.isSubclassOf
-import kotlin.reflect.full.isSubtypeOf
-import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.full.*
 import kotlin.reflect.typeOf
 
 /**
@@ -197,18 +194,38 @@ val KClass<*>.dataClassFields: List<KProperty<*>>
 val KClassifier?.isEnum: Boolean
     get() = (this is KClass<*>) && this.isSubclassOf(Enum::class)
 
+val KClassifier?.isDataClass: Boolean
+    get() =  (this is KClass<*>) && this.isData
+
+/*
 // obter uma lista de constantes de um tipo enumerado
 val <T : Any> KClass<T>.enumConstants: List<T> get() {
     require(isEnum) { "instance must be enum" }
     return java.enumConstants.toList()
 }
+*/
 
 fun Any.toJSON(): JSONObject{
     val rootObject = JSONObject()
     val list = this::class.dataClassFields
+    for (it in list){
+        if (it.hasAnnotation<JsonExclude>())
+            continue
+
+        val name = if (it.hasAnnotation<JsonName>()) it.findAnnotation<JsonName>()!!.name else it.name
+
+        if(it.hasAnnotation<JsonAsString>())
+            rootObject.addElement(name, JSONString(it.call(this).toString()))
+        else {
+            val element: JSONElement = it.mapElement(this)
+            rootObject.addElement(
+                name,
+                element
+            )
+        }
+    }
     list.forEach {
-        val element: JSONElement = it.mapElement(this)
-        rootObject.addElement(it.name, element)
+
     }
     return rootObject
 }
@@ -219,22 +236,35 @@ fun KProperty<*>.mapElement(parent: Any): JSONElement =
         //(this.returnType == typeOf<String>()) -> JSONString(this.call(parent) as String) CHAR?
         (this.returnType == typeOf<String>()) -> JSONString(this.call(parent) as String) //ou usar CharSequence?
         (this.returnType == typeOf<Boolean>()) -> JSONBoolean(this.call(parent) as Boolean)
-        (this.returnType.classifier.isEnum) -> JSONString(this.name)
+        (this.returnType.classifier.isEnum) -> JSONString(this.call(parent).toString())
         (this.returnType == typeOf<Map<String, *>>()) -> JSONArray() // fazer
         (this.returnType.isSubtypeOf(typeOf<Iterable<*>>())) -> (this.call(parent) as Iterable<Any>).getArrayElements() //adicionar elementos
-        (this.returnType.classifier is KClass<*> && (this.returnType.classifier as KClass<*>).isData) -> this.call(parent)!!.toJSON()
+        (this.returnType.classifier.isDataClass) -> this.call(parent)!!.toJSON()
         else -> JSONNull()
     }
 
     fun Iterable<Any>.getArrayElements(): JSONArray{
         val jsonArray = JSONArray()
+
         this.forEach { arrayElement ->
-            arrayElement::class.dataClassFields.forEach {
+            val arrayElementClass = arrayElement::class
+            if(arrayElementClass.isDataClass) //talvez também é preciso isto para iterables
+                jsonArray.addElement(arrayElement.toJSON())
+            else
+                arrayElementClass.memberProperties.forEach{
                 jsonArray.addElement(it.mapElement(arrayElement))
             }
         }
+
         return jsonArray
     }
+
+@Target(AnnotationTarget.PROPERTY)
+annotation class JsonExclude()
+@Target(AnnotationTarget.PROPERTY)
+annotation class JsonName(val name: String)
+@Target(AnnotationTarget.PROPERTY)
+annotation class JsonAsString()
 
 fun main() {
     val jobject = JSONObject()

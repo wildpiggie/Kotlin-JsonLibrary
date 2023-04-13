@@ -1,10 +1,8 @@
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
 
-class testsLibraryJSON {
+class TestsLibraryJSON {
 
     private var jobject = JSONObject()
     private var studentArray = JSONArray()
@@ -95,8 +93,11 @@ class testsLibraryJSON {
         classObject.addInscrito(StudentObject(26503, "André Santos", false))
 
         val jsonClassObject: JSONObject = classObject.toJSON()
-        println(jsonClassObject.getStructure())
+        assertEquals(jobject.getStructure(), jsonClassObject.getStructure())
 
-        //assertEquals(jobject.getStructure(), jsonClassObject.getStructure())
+        val customClassObject: CustomClassObject =
+            CustomClassObject(UC.PGMV, 99, false, StudentObject(0, "A", true), listOf(1, StudentObject(1, "S", false), listOf(1, 2, 3)))
+        println(customClassObject.toJSON().getStructure())
+
     }
 }
