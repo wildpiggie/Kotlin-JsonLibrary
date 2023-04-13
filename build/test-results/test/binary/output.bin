@@ -1,4 +1,26 @@
 {
+	"uc" : "PA",
+	"ects" : 6.0,
+	"data-exame" : null,
+	"inscritos" : [
+		{
+			"numero" : 101101,
+			"nome" : "Dave Farley",
+			"internacional" : true
+		},
+		{
+			"numero" : 101102,
+			"nome" : "Martin Fowler",
+			"internacional" : true
+		},
+		{
+			"numero" : 26503,
+			"nome" : "André Santos",
+			"internacional" : false
+		}
+	]
+}
+{
 	"uc" : "PGMV",
 	"numberAsString" : "99",
 	"lie" : false,
@@ -8,13 +30,16 @@
 		"internacional" : true
 	},
 	"list" : [
+		1,
 		{
 			"numero" : 1,
 			"nome" : "S",
 			"internacional" : false
 		},
-		null,
-		null,
-		null
+		[
+			1,
+			2,
+			3
+		]
 	]
 }

@@ -20,6 +20,7 @@ interface Visitor {
     fun endVisit(jsonComposite: JSONComposite) {}
 
 }
+
 interface JSONElement {
     fun accept(visitor: Visitor) {}
 }
@@ -28,7 +29,7 @@ abstract class JSONComposite : JSONElement {
     abstract val elements: Any
 }
 
-abstract class JSONLeaf<T> (val value: T) : JSONElement {
+abstract class JSONLeaf<T>(val value: T) : JSONElement {
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
     }
@@ -52,6 +53,7 @@ class JSONObject() : JSONComposite() {
         return elements.toString()
     }
 }
+
 class JSONArray() : JSONComposite() {
     override val elements = mutableListOf<JSONElement>()
     fun addElement(value: JSONElement) {
@@ -70,21 +72,25 @@ class JSONArray() : JSONComposite() {
         return elements.toString()
     }
 }
+
 class JSONString(value: String) : JSONLeaf<String>(value) {
     override fun toString(): String {
         return "\"" + value.toString() + "\""
     }
 }
+
 class JSONNumber(value: Number) : JSONLeaf<Number>(value) {
     override fun toString(): String {
         return value.toString()
     }
 }
-class JSONBoolean(value: Boolean) :JSONLeaf<Boolean>(value) {
+
+class JSONBoolean(value: Boolean) : JSONLeaf<Boolean>(value) {
     override fun toString(): String {
         return value.toString()
     }
 }
+
 class JSONNull : JSONLeaf<Any?>(null) {
     override fun toString(): String {
         return "null" // ??
@@ -131,9 +137,9 @@ fun JSONObject.getJSONObjectWithPropertyAlt(list: List<String>): MutableList<JSO
             counter = 0
             if (jsonComposite is JSONObject) {
                 jsonComposite.elements.keys.forEach {
-                    if(list.contains(it)) counter++
+                    if (list.contains(it)) counter++
                 }
-                if(counter == list.size && list.isNotEmpty()) elementList.add(jsonComposite)
+                if (counter == list.size && list.isNotEmpty()) elementList.add(jsonComposite)
             }
         }
     }
@@ -142,17 +148,17 @@ fun JSONObject.getJSONObjectWithPropertyAlt(list: List<String>): MutableList<JSO
     return result.elementList
 }
 
-fun JSONElement.getStructure() : String {
-    val structure = object  : Visitor {
+fun JSONElement.getStructure(): String {
+    val structure = object : Visitor {
         var structure: String = ""
         private var prefix: String = ""
-        private var prefix2: String= ""
+        private var prefix2: String = ""
         private var depth: Int = 0
         private val propertyMap = mutableMapOf<Int, MutableList<String>>()
 
         override fun visit(jsonLeaf: JSONLeaf<*>) {
             val name = propertyMap[depth]?.removeFirstOrNull()
-            structure += prefix2 + "\n" + prefix + (if(name.isNullOrEmpty()) "" else "\"$name\" : ") + jsonLeaf
+            structure += prefix2 + "\n" + prefix + (if (name.isNullOrEmpty()) "" else "\"$name\" : ") + jsonLeaf
             prefix2 = ","
         }
 
@@ -195,74 +201,68 @@ val KClassifier?.isEnum: Boolean
     get() = (this is KClass<*>) && this.isSubclassOf(Enum::class)
 
 val KClassifier?.isDataClass: Boolean
-    get() =  (this is KClass<*>) && this.isData
+    get() = (this is KClass<*>) && this.isData
 
-/*
-// obter uma lista de constantes de um tipo enumerado
-val <T : Any> KClass<T>.enumConstants: List<T> get() {
-    require(isEnum) { "instance must be enum" }
-    return java.enumConstants.toList()
-}
-*/
 
-fun Any.toJSON(): JSONObject{
+fun Any.toJSON(): JSONObject {
     val rootObject = JSONObject()
     val list = this::class.dataClassFields
-    for (it in list){
+    for (it in list) {
         if (it.hasAnnotation<JsonExclude>())
             continue
 
         val name = if (it.hasAnnotation<JsonName>()) it.findAnnotation<JsonName>()!!.name else it.name
 
-        if(it.hasAnnotation<JsonAsString>())
+        if (it.hasAnnotation<JsonAsString>())
             rootObject.addElement(name, JSONString(it.call(this).toString()))
         else {
-            val element: JSONElement = it.mapElement(this)
+            val element: JSONElement = it.call(this).mapElement()
             rootObject.addElement(
                 name,
                 element
             )
         }
     }
-    list.forEach {
 
-    }
     return rootObject
 }
 
-fun KProperty<*>.mapElement(parent: Any): JSONElement =
-    when {
-        (this.returnType == typeOf<Number>()) -> JSONNumber(this.call(parent) as Number)
-        //(this.returnType == typeOf<String>()) -> JSONString(this.call(parent) as String) CHAR?
-        (this.returnType == typeOf<String>()) -> JSONString(this.call(parent) as String) //ou usar CharSequence?
-        (this.returnType == typeOf<Boolean>()) -> JSONBoolean(this.call(parent) as Boolean)
-        (this.returnType.classifier.isEnum) -> JSONString(this.call(parent).toString())
-        (this.returnType == typeOf<Map<String, *>>()) -> JSONArray() // fazer
-        (this.returnType.isSubtypeOf(typeOf<Iterable<*>>())) -> (this.call(parent) as Iterable<Any>).getArrayElements() //adicionar elementos
-        (this.returnType.classifier.isDataClass) -> this.call(parent)!!.toJSON()
-        else -> JSONNull()
+fun Any?.mapElement(): JSONElement =
+    when (this) {
+        is Number -> JSONNumber(this)
+        is String -> JSONString(this)
+        is Boolean -> JSONBoolean(this)
+        is Enum<*> -> JSONString(this.name)
+        is Map<*, *> -> this.getMapElements()
+        is Iterable<*> -> this.getArrayElements()
+        null -> JSONNull()
+        else -> if (this::class.isData) this.toJSON() else JSONNull()
     }
 
-    fun Iterable<Any>.getArrayElements(): JSONArray{
-        val jsonArray = JSONArray()
+fun Iterable<*>.getArrayElements(): JSONArray {
+    val jsonArray = JSONArray()
 
-        this.forEach { arrayElement ->
-            val arrayElementClass = arrayElement::class
-            if(arrayElementClass.isDataClass) //talvez também é preciso isto para iterables
-                jsonArray.addElement(arrayElement.toJSON())
-            else
-                arrayElementClass.memberProperties.forEach{
-                jsonArray.addElement(it.mapElement(arrayElement))
-            }
-        }
-
-        return jsonArray
+    this.forEach { arrayElement ->
+        jsonArray.addElement(arrayElement.mapElement())
     }
+    return jsonArray
+}
+
+fun Map<*, *>.getMapElements(): JSONObject {
+    val jsonObject = JSONObject()
+
+    this.forEach { mapEntry ->
+        jsonObject.addElement(mapEntry.key.toString(), mapEntry.mapElement())
+    }
+    return jsonObject
+}
 
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonExclude()
+
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonName(val name: String)
+
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonAsString()
 
