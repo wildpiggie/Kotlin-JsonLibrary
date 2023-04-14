@@ -1,8 +1,6 @@
 import kotlin.reflect.KClass
-import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.*
-import kotlin.reflect.typeOf
 
 /**
  * confirmar se a forma como fizemos esta certo
@@ -75,7 +73,7 @@ class JSONArray() : JSONComposite() {
 
 class JSONString(value: String) : JSONLeaf<String>(value) {
     override fun toString(): String {
-        return "\"" + value.toString() + "\""
+        return "\"$value\""
     }
 }
 
@@ -120,8 +118,6 @@ fun JSONObject.getValuesByProperty(property: String): List<JSONElement> {
                 propertyMap[++depth] = jsonComposite.elements.keys.toMutableList()
             }
         }
-
-
     }
 
     this.accept(result)
@@ -196,15 +192,8 @@ val KClass<*>.dataClassFields: List<KProperty<*>>
         }
     }
 
-// saber se um KClassifier é um enumerado
-val KClassifier?.isEnum: Boolean
-    get() = (this is KClass<*>) && this.isSubclassOf(Enum::class)
 
-val KClassifier?.isDataClass: Boolean
-    get() = (this is KClass<*>) && this.isData
-
-
-fun Any.toJSON(): JSONObject {
+fun Any.toJson(): JSONObject {
     val rootObject = JSONObject()
     val list = this::class.dataClassFields
     for (it in list) {
@@ -217,13 +206,9 @@ fun Any.toJSON(): JSONObject {
             rootObject.addElement(name, JSONString(it.call(this).toString()))
         else {
             val element: JSONElement = it.call(this).mapElement()
-            rootObject.addElement(
-                name,
-                element
-            )
+            rootObject.addElement(name, element)
         }
     }
-
     return rootObject
 }
 
@@ -231,12 +216,13 @@ fun Any?.mapElement(): JSONElement =
     when (this) {
         is Number -> JSONNumber(this)
         is String -> JSONString(this)
+        is Char -> JSONString(this.toString())
         is Boolean -> JSONBoolean(this)
         is Enum<*> -> JSONString(this.name)
         is Map<*, *> -> this.getMapElements()
         is Iterable<*> -> this.getArrayElements()
         null -> JSONNull()
-        else -> if (this::class.isData) this.toJSON() else JSONNull()
+        else -> if (this::class.isData) this.toJson() else JSONNull()
     }
 
 fun Iterable<*>.getArrayElements(): JSONArray {
@@ -252,7 +238,7 @@ fun Map<*, *>.getMapElements(): JSONObject {
     val jsonObject = JSONObject()
 
     this.forEach { mapEntry ->
-        jsonObject.addElement(mapEntry.key.toString(), mapEntry.mapElement())
+        jsonObject.addElement(mapEntry.key.toString(), mapEntry.value.mapElement())
     }
     return jsonObject
 }
@@ -297,6 +283,5 @@ fun main() {
     val jarray2 = JSONArray()
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
-
 }
 

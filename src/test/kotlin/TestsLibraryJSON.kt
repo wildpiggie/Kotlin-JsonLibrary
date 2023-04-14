@@ -1,6 +1,8 @@
 import org.junit.jupiter.api.Test
 import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class TestsLibraryJSON {
 
@@ -87,18 +89,38 @@ class TestsLibraryJSON {
 
     @Test
     fun testInference() {
-        val classObject: ClassObject = ClassObject(UC.PA, 6.0, null)
+        val classObject = ClassObject(UC.PA, 6.0, null)
         classObject.addInscrito(StudentObject(101101, "Dave Farley", true))
         classObject.addInscrito(StudentObject(101102, "Martin Fowler", true))
         classObject.addInscrito(StudentObject(26503, "André Santos", false))
 
-        val jsonClassObject: JSONObject = classObject.toJSON()
-        //assertEquals(jobject.getStructure(), jsonClassObject.getStructure())
-        println(jsonClassObject.getStructure())
+        val jsonClassObject: JSONObject = classObject.toJson()
+        assertEquals(jobject.getStructure(), jsonClassObject.getStructure())
 
-        val customClassObject: CustomClassObject =
-            CustomClassObject(UC.PGMV, 99, false, StudentObject(0, "A", true), listOf(1, StudentObject(1, "S", false), listOf(1, 2, 3)))
-        println(customClassObject.toJSON().getStructure())
+        val customClassObject = CustomClassObject(
+                StudentObject(0, "A", true),
+                listOf(1, StudentObject(1, "S", false), listOf(1, 2, 3)),
+                mapOf("One point five" to 1.5, "Two point two" to 2.2),
+                1, true, 'x', "stringValue", UC.PGMV, "excluded", false, 99)
 
+        val customJsonElements = customClassObject.toJson().elements
+
+        assertIs<JSONObject>(customJsonElements["student"])
+        val list = customJsonElements["list"]
+        assertIs<JSONArray>(list)
+        assertTrue(list.elements[0] is JSONNumber && list.elements[1] is JSONObject && list.elements[2] is JSONArray)
+        val mapObject = customJsonElements["map"]
+        assertIs<JSONObject>(mapObject)
+        assertTrue(mapObject.elements["One point five"] is JSONNumber && mapObject.elements["Two point two"] is JSONNumber)
+        assertIs<JSONNumber>(customJsonElements["number"])
+        assertEquals("1", customJsonElements["number"].toString()) //quermos fazer isto para todos? Ou colocar as variáveis como públicas para poderem ser vistas
+        assertIs<JSONBoolean>(customJsonElements["boolean"])
+        assertIs<JSONString>(customJsonElements["character"])
+        assertIs<JSONString>(customJsonElements["string"])
+        assertIs<JSONString>(customJsonElements["enum"])
+        assertTrue(!customJsonElements.contains("excluded"))
+        assertTrue(!customJsonElements.contains("truth") && customJsonElements.contains("lie"))
+        assertIs<JSONString>(customJsonElements["numberAsString"])
+        assertEquals("\"99\"", customJsonElements["numberAsString"].toString())
     }
 }

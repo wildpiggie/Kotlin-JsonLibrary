@@ -19,13 +19,18 @@ data class ClassObject(
 }
 
 data class CustomClassObject(
-    val uc: UC,
-    @JsonAsString
-    val numberAsString: Number,
-    @JsonName("lie")
-    val truth: Boolean,
     val student: StudentObject,
     val list: List<Any>,
+    val map: Map<*, *>,
+    val number: Number,
+    val boolean: Boolean,
+    val character: Char,
+    val string: String,
+    val enum: UC,
     @JsonExclude
-    val excludedString: String = "excluded"
+    val excludedString: String = "excluded",
+    @JsonName("lie")
+    val truth: Boolean,
+    @JsonAsString
+    val numberAsString: Int
 )
