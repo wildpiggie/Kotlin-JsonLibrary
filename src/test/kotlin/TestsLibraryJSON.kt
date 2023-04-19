@@ -113,14 +113,18 @@ class TestsLibraryJSON {
         assertIs<JSONObject>(mapObject)
         assertTrue(mapObject.elements["One point five"] is JSONNumber && mapObject.elements["Two point two"] is JSONNumber)
         assertIs<JSONNumber>(customJsonElements["number"])
-        assertEquals("1", customJsonElements["number"].toString()) //quermos fazer isto para todos? Ou colocar as variáveis como públicas para poderem ser vistas
+        assertEquals(1, (customJsonElements["number"] as JSONNumber).value)
         assertIs<JSONBoolean>(customJsonElements["boolean"])
+        assertEquals(true, (customJsonElements["boolean"] as JSONBoolean).value)
         assertIs<JSONString>(customJsonElements["character"])
+        assertEquals("x", (customJsonElements["character"] as JSONString).value)
         assertIs<JSONString>(customJsonElements["string"])
+        assertEquals("stringValue", (customJsonElements["string"] as JSONString).value)
         assertIs<JSONString>(customJsonElements["enum"])
+        assertEquals("PGMV", (customJsonElements["enum"] as JSONString).value)
         assertTrue(!customJsonElements.contains("excluded"))
         assertTrue(!customJsonElements.contains("truth") && customJsonElements.contains("lie"))
         assertIs<JSONString>(customJsonElements["numberAsString"])
-        assertEquals("\"99\"", customJsonElements["numberAsString"].toString())
+        assertEquals("\"99\"", (customJsonElements["numberAsString"] as JSONString).toString())
     }
 }

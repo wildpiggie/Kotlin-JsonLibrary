@@ -184,15 +184,6 @@ fun JSONElement.getStructure(): String {
     return structure.structure
 }
 
-val KClass<*>.dataClassFields: List<KProperty<*>>
-    get() {
-        require(isData) { "instance must be data class" }
-        return primaryConstructor!!.parameters.map { p ->
-            declaredMemberProperties.find { it.name == p.name }!!
-        }
-    }
-
-
 fun Any.toJson(): JSONObject {
     val rootObject = JSONObject()
     val list = this::class.dataClassFields
@@ -212,7 +203,7 @@ fun Any.toJson(): JSONObject {
     return rootObject
 }
 
-fun Any?.mapElement(): JSONElement =
+private fun Any?.mapElement(): JSONElement =
     when (this) {
         is Number -> JSONNumber(this)
         is String -> JSONString(this)
@@ -225,7 +216,7 @@ fun Any?.mapElement(): JSONElement =
         else -> if (this::class.isData) this.toJson() else JSONNull()
     }
 
-fun Iterable<*>.getArrayElements(): JSONArray {
+private fun Iterable<*>.getArrayElements(): JSONArray {
     val jsonArray = JSONArray()
 
     this.forEach { arrayElement ->
@@ -234,7 +225,7 @@ fun Iterable<*>.getArrayElements(): JSONArray {
     return jsonArray
 }
 
-fun Map<*, *>.getMapElements(): JSONObject {
+private fun Map<*, *>.getMapElements(): JSONObject {
     val jsonObject = JSONObject()
 
     this.forEach { mapEntry ->
@@ -242,6 +233,14 @@ fun Map<*, *>.getMapElements(): JSONObject {
     }
     return jsonObject
 }
+
+private val KClass<*>.dataClassFields: List<KProperty<*>>
+    get() {
+        require(isData) { "instance must be data class" }
+        return primaryConstructor!!.parameters.map { p ->
+            declaredMemberProperties.find { it.name == p.name }!!
+        }
+    }
 
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonExclude()
