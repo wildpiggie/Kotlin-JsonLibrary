@@ -1,4 +1,4 @@
-import java.util.StringJoiner
+//import java.util.StringJoiner
 import kotlin.reflect.KClass
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
@@ -6,22 +6,14 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.primaryConstructor
 
-/**
- * confirmar se a forma como fizemos esta certo
- * com o generico no JSONLeaf da problemas no visitor -> so conseguimos definir um tipo
- * as fun de search a usar os visitor estao feitas corretamente?
- * nos testes na funçao de obter os valores associados as propriedades, temos uma lista de JSONElements, por isso
- * ao comparar uma lista de 2 objectos com o resultado, embora seja o mesmo nao vai dar certo por nao serem data classes
- * Testatasmos a comparar os values?
- * Na funçao para obter os objetos associados às propriedades, podemos fazer a pesquisa toda quando entramos no composto
- * **/
-
 interface Visitor {
     fun visit(jsonLeaf: JSONLeaf<*>) {}
     fun visit(jsonComposite: JSONComposite) {}
+    fun visit(key: String, value: JSONElement) {}
     fun endVisit(jsonComposite: JSONComposite) {}
 
 }
+
 interface JSONElement {
     fun accept(visitor: Visitor) {}
 }
@@ -44,8 +36,9 @@ class JSONObject() : JSONComposite() {
 
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
-        elements.values.forEach {
-            it.accept(visitor)
+        elements.forEach {
+            it.value.accept(visitor)
+            visitor.visit(it.key, it.value)
         }
         visitor.endVisit(this)
     }
@@ -54,6 +47,7 @@ class JSONObject() : JSONComposite() {
         return elements.toString()
     }
 }
+
 class JSONArray() : JSONComposite() {
     override val elements = mutableListOf<JSONElement>()
     fun addElement(value: JSONElement) {
@@ -72,9 +66,10 @@ class JSONArray() : JSONComposite() {
         return elements.toString()
     }
 }
+
 class JSONString(value: String) : JSONLeaf<String>(value) {
     override fun toString(): String {
-        return "\"" + value.toString() + "\""
+        return "\"" + value + "\""
     }
 }
 class JSONNumber(value: Number) : JSONLeaf<Number>(value) {
@@ -89,45 +84,26 @@ class JSONBoolean(value: Boolean) :JSONLeaf<Boolean>(value) {
 }
 class JSONNull : JSONLeaf<Any?>(null) {
     override fun toString(): String {
-        return "null" // ??
+        return "null"
     }
 }
 
 fun JSONObject.getValuesByProperty(property: String): List<JSONElement> {
     val result = object : Visitor {
         var elementList = mutableListOf<JSONElement>()
-        private var depth: Int = 0
-        private val propertyMap = mutableMapOf<Int, MutableList<String>>()
-
-
-        override fun visit(jsonLeaf: JSONLeaf<*>) {
-            val name = propertyMap[depth]?.removeFirst()
-            if (name == property) {
-                elementList.add(jsonLeaf)
-            }
-        }
-
         override fun visit(jsonComposite: JSONComposite) {
-            val name = propertyMap[depth]?.removeFirstOrNull()
-            if (name == property) {
-                elementList.add(jsonComposite)
-            }
-            if (jsonComposite is JSONObject) {
-                propertyMap[++depth] = jsonComposite.elements.keys.toMutableList()
-            }
+            if(jsonComposite is JSONObject) jsonComposite.elements.forEach { if(it.key == property) elementList.add(it.value) }
         }
-
-
     }
-
     this.accept(result)
     return result.elementList
 }
 
-fun JSONObject.getJSONObjectWithPropertyAlt(list: List<String>): MutableList<JSONObject> {
+fun JSONObject.getJSONObjectWithProperty(list: List<String>): List<JSONObject> {
     val result = object : Visitor {
         var elementList = mutableListOf<JSONObject>()
         private var counter = 0
+        private var uniqueList = list.distinct()
 
         override fun visit(jsonComposite: JSONComposite) {
             counter = 0
@@ -135,13 +111,65 @@ fun JSONObject.getJSONObjectWithPropertyAlt(list: List<String>): MutableList<JSO
                 jsonComposite.elements.keys.forEach {
                     if(list.contains(it)) counter++
                 }
-                if(counter == list.size && list.isNotEmpty()) elementList.add(jsonComposite)
+                if(counter == uniqueList.size && list.isNotEmpty()) elementList.add(jsonComposite)
             }
         }
     }
-
     this.accept(result)
     return result.elementList
+}
+
+fun JSONObject.verifyStructure(property: String, type: KClass<*>) : Boolean {
+    val result = object : Visitor {
+        var value = true
+        override fun visit(jsonComposite: JSONComposite) {
+            if(jsonComposite is JSONObject) {
+                jsonComposite.elements.forEach {
+                    if(it.key == property) {
+                        if(it.value::class != type) value = false
+                    }
+                }
+            }
+        }
+    }
+    this.accept(result)
+    return result.value
+}
+
+/** fun<T: Any>JSONObject.verifyStructure(property: String, clazz: KClass<T>) : Boolean {
+    val result = object : Visitor {
+        var value = false
+        override fun visit(jsonComposite: JSONComposite) {
+            if(jsonComposite is JSONObject) {
+                jsonComposite.elements.forEach {
+                    if(it.key == property) {
+                        println(clazz.toString())
+                    }
+                }
+            }
+        }
+    }
+    this.accept(result)
+    return result.value
+} **/
+
+fun JSONObject.verifyArrayEquality(property: String) : Boolean {
+    val result = object : Visitor {
+        var value = false
+        override fun visit(jsonComposite: JSONComposite) {
+            if(jsonComposite is JSONObject) {
+                jsonComposite.elements.forEach { it ->
+                    if(it.key == property && it.value is JSONArray) {
+                        (it.value as JSONArray).elements.forEach {
+                            println(it::class)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    this.accept(result)
+    return result.value
 }
 
 fun JSONElement.getStructure() : String {
@@ -152,10 +180,20 @@ fun JSONElement.getStructure() : String {
         private var depth: Int = 0
         private val propertyMap = mutableMapOf<Int, MutableList<String>>()
 
-        override fun visit(jsonLeaf: JSONLeaf<*>) {
+        /**override fun visit(jsonLeaf: JSONLeaf<*>) {
             val name = propertyMap[depth]?.removeFirst()
             structure += prefix2 + "\n" + prefix + (if(name.isNullOrEmpty()) "" else "\"$name\" : ") + jsonLeaf
             prefix2 = ","
+        }
+        **/
+
+        override fun visit(key: String, value: JSONElement) {
+            // usar este visit para imprimir a propriedade e value (se for leaf) se nao passa a frente e deixa o composto
+            if(value is JSONLeaf<*>) {
+                structure += prefix2 + "\n" + prefix + (if (key.isNullOrEmpty()) "" else "\"$key\" : ") + value
+                prefix2 = ","
+            }
+
         }
 
         override fun visit(jsonComposite: JSONComposite) {
@@ -235,6 +273,8 @@ fun main() {
     val jarray2 = JSONArray()
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
+
+    println(jobject.getStructure())
 
 }
 

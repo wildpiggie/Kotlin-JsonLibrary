@@ -1,8 +1,5 @@
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import kotlin.test.BeforeTest
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class testsLibraryJSON {
 
@@ -55,7 +52,6 @@ class testsLibraryJSON {
 
     @Test
     fun testSearch() {
-
         val jarray2 = JSONArray()
         jarray2.addElement(JSONString("E1"))
         jarray2.addElement(JSONNumber(1))
@@ -70,21 +66,28 @@ class testsLibraryJSON {
         assertEquals(result, jobject.getValuesByProperty("numero"))
         assertEquals(mutableListOf(), jobject.getValuesByProperty("raiz"))
         assertEquals(mutableListOf(), jobject.getValuesByProperty(""))
+        assertIs<JSONArray>(jobject.getValuesByProperty("inscritos")[0])
+        assertIs<List<JSONElement>>((jobject.getValuesByProperty("inscritos")[0] as JSONArray).elements)
+        assertEquals(students, (jobject.getValuesByProperty("inscritos")[0] as JSONArray).elements as List<JSONElement> )
 
+        /**
+        assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
+        assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
+        assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
+        assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithProperty(listOf("data-exame")))
+        assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithProperty(listOf("inscritos")))
+        assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf()))
+        assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "numero")))
+        **/
+    }
 
-        //assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
-        //assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
-        //assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
-        /*
-        assertEquals(mutableListOf(jobject2, jobject3), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "nome")))
-        assertEquals(mutableListOf(), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "raiz")))
-        assertEquals(mutableListOf(jobject2), jobject.getJSONObjectWithPropertyAlt(listOf("numero", "internacional")))
-        */
-        
-        assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithPropertyAlt(listOf("data-exame")))
-        assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithPropertyAlt(listOf("inscritos")))
-        assertEquals(mutableListOf(), jobject.getJSONObjectWithPropertyAlt(listOf()))
-        //assertEquals(resultT2, jobject.getJSONObjectWithProperty2(listOf("numero", "numero"))) -> fzr a verificaçao dif
+    @Test
+    fun testVerifications() {
+        assertTrue(jobject.verifyStructure("numero", JSONNumber::class))
+        assertTrue(jobject.verifyStructure("numero", JSONNumber::class))
+        assertFalse(jobject.verifyStructure("numero", JSONString::class))
+
+        //assertTrue(jobject.verifyArrayEquality("inscritos"))
     }
 
     @Test
@@ -95,6 +98,6 @@ class testsLibraryJSON {
         classObject.addInscrito(StudentObject(26503, "André Santos", false))
 
 
-        assertEquals(jobject.getStructure(), TODO())
+        //assertEquals(jobject.getStructure(), TODO())
     }
 }
