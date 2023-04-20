@@ -70,7 +70,7 @@ class testsLibraryJSON {
         assertIs<List<JSONElement>>((jobject.getValuesByProperty("inscritos")[0] as JSONArray).elements)
         assertEquals(students, (jobject.getValuesByProperty("inscritos")[0] as JSONArray).elements as List<JSONElement> )
 
-        /**
+
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
         assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
@@ -78,13 +78,17 @@ class testsLibraryJSON {
         assertEquals(mutableListOf(jobject), jobject.getJSONObjectWithProperty(listOf("inscritos")))
         assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf()))
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "numero")))
-        **/
+
     }
 
     @Test
     fun testVerifications() {
         assertTrue(jobject.verifyStructure("numero", JSONNumber::class))
-        assertTrue(jobject.verifyStructure("numero", JSONNumber::class))
+        assertTrue(jobject.verifyStructure("nome", JSONString::class))
+        assertTrue(jobject.verifyStructure("internacional", JSONBoolean::class))
+        assertTrue(jobject.verifyStructure("inscritos", JSONArray::class))
+        assertTrue(jobject.verifyStructure("data-exame", JSONNull::class))
+        assertFalse(jobject.verifyStructure("internacional", JSONArray::class))
         assertFalse(jobject.verifyStructure("numero", JSONString::class))
 
         //assertTrue(jobject.verifyArrayEquality("inscritos"))

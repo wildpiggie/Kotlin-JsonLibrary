@@ -9,13 +9,17 @@ import kotlin.reflect.full.primaryConstructor
 interface Visitor {
     fun visit(jsonLeaf: JSONLeaf<*>) {}
     fun visit(jsonComposite: JSONComposite) {}
+    fun visit(jsonObject: JSONObject) {}
+    fun visit(jsonArray: JSONArray) {}
     fun visit(key: String, value: JSONElement) {}
+    fun visit(value: JSONElement) {}
     fun endVisit(jsonComposite: JSONComposite) {}
 
 }
 
 interface JSONElement {
     fun accept(visitor: Visitor) {}
+    fun accept(visitor: Visitor, key: String) {}
 }
 
 abstract class JSONComposite : JSONElement {
@@ -25,6 +29,9 @@ abstract class JSONComposite : JSONElement {
 abstract class JSONLeaf<T> (val value: T) : JSONElement {
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
+    }
+    override fun accept(visitor: Visitor, key: String) {
+        visitor.visit(key, this)
     }
 }
 
@@ -36,9 +43,17 @@ class JSONObject() : JSONComposite() {
 
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
+        visitChildren(visitor)
+    }
+
+    override fun accept(visitor: Visitor, key: String) {
+        visitor.visit(key, this)
+        visitChildren(visitor)
+    }
+
+    private fun visitChildren(visitor: Visitor) {
         elements.forEach {
-            it.value.accept(visitor)
-            visitor.visit(it.key, it.value)
+            it.value.accept(visitor, it.key)
         }
         visitor.endVisit(this)
     }
@@ -56,6 +71,15 @@ class JSONArray() : JSONComposite() {
 
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
+        visitChildren(visitor)
+    }
+
+    override fun accept(visitor: Visitor, key: String) {
+        visitor.visit(key, this)
+        visitChildren(visitor)
+    }
+
+    private fun visitChildren(visitor: Visitor) {
         elements.forEach {
             it.accept(visitor)
         }
@@ -91,10 +115,12 @@ class JSONNull : JSONLeaf<Any?>(null) {
 fun JSONObject.getValuesByProperty(property: String): List<JSONElement> {
     val result = object : Visitor {
         var elementList = mutableListOf<JSONElement>()
+
         override fun visit(jsonComposite: JSONComposite) {
             if(jsonComposite is JSONObject) jsonComposite.elements.forEach { if(it.key == property) elementList.add(it.value) }
         }
     }
+
     this.accept(result)
     return result.elementList
 }
@@ -115,6 +141,7 @@ fun JSONObject.getJSONObjectWithProperty(list: List<String>): List<JSONObject> {
             }
         }
     }
+
     this.accept(result)
     return result.elementList
 }
@@ -122,6 +149,7 @@ fun JSONObject.getJSONObjectWithProperty(list: List<String>): List<JSONObject> {
 fun JSONObject.verifyStructure(property: String, type: KClass<*>) : Boolean {
     val result = object : Visitor {
         var value = true
+
         override fun visit(jsonComposite: JSONComposite) {
             if(jsonComposite is JSONObject) {
                 jsonComposite.elements.forEach {
@@ -132,26 +160,10 @@ fun JSONObject.verifyStructure(property: String, type: KClass<*>) : Boolean {
             }
         }
     }
+
     this.accept(result)
     return result.value
 }
-
-/** fun<T: Any>JSONObject.verifyStructure(property: String, clazz: KClass<T>) : Boolean {
-    val result = object : Visitor {
-        var value = false
-        override fun visit(jsonComposite: JSONComposite) {
-            if(jsonComposite is JSONObject) {
-                jsonComposite.elements.forEach {
-                    if(it.key == property) {
-                        println(clazz.toString())
-                    }
-                }
-            }
-        }
-    }
-    this.accept(result)
-    return result.value
-} **/
 
 fun JSONObject.verifyArrayEquality(property: String) : Boolean {
     val result = object : Visitor {
@@ -173,54 +185,64 @@ fun JSONObject.verifyArrayEquality(property: String) : Boolean {
 }
 
 fun JSONElement.getStructure() : String {
-    val structure = object  : Visitor {
+    val strucutre = object : Visitor {
         var structure: String = ""
         private var prefix: String = ""
         private var prefix2: String= ""
-        private var depth: Int = 0
-        private val propertyMap = mutableMapOf<Int, MutableList<String>>()
-
-        /**override fun visit(jsonLeaf: JSONLeaf<*>) {
-            val name = propertyMap[depth]?.removeFirst()
-            structure += prefix2 + "\n" + prefix + (if(name.isNullOrEmpty()) "" else "\"$name\" : ") + jsonLeaf
-            prefix2 = ","
-        }
-        **/
 
         override fun visit(key: String, value: JSONElement) {
-            // usar este visit para imprimir a propriedade e value (se for leaf) se nao passa a frente e deixa o composto
-            if(value is JSONLeaf<*>) {
-                structure += prefix2 + "\n" + prefix + (if (key.isNullOrEmpty()) "" else "\"$key\" : ") + value
-                prefix2 = ","
+            when(value) {
+                is JSONLeaf<*> -> {
+                    structure += prefix2 + "\n" + prefix + (if (key.isEmpty()) "" else "\"$key\" : ") + value
+                    prefix2 = ","
+                }
+
+                is JSONArray -> {
+                    if(structure.isNotEmpty()) structure += prefix2 + "\n"
+                    structure += "$prefix\"$key\" : ["
+                    prefix2 = ""
+                    prefix += "\t"
+                }
+
+                is JSONObject -> {
+                    if(structure.isNotEmpty()) structure += prefix2 + "\n"
+                    structure += "$prefix\"$key\" : {"
+                    prefix2 = ""
+                    prefix += "\t"
+                }
             }
+        }
+
+        override fun visit(value: JSONLeaf<*>) {
+            structure += prefix2 + "\n" + prefix + value
+            prefix2 = ","
 
         }
 
-        override fun visit(jsonComposite: JSONComposite) {
-            if (structure.isNotEmpty()) {
-                structure += prefix2 + "\n"
-            }
-
-            val name = propertyMap[depth]?.removeFirstOrNull()
-            structure += prefix + (if (name == null) "" else "\"$name\" : ") + if (jsonComposite is JSONObject) "{" else "["
+        override fun visit(jsonObject: JSONObject) {
+            if(structure.isNotEmpty()) structure += prefix2 + "\n"
+            structure += "$prefix{"
             prefix2 = ""
             prefix += "\t"
+        }
 
-            if (jsonComposite is JSONObject) {
-                propertyMap[++depth] = jsonComposite.elements.keys.toMutableList()
-            }
+        override fun visit(jsonArray: JSONArray) {
+            if(structure.isNotEmpty()) structure += prefix2 + "\n"
+            structure += "$prefix["
+            prefix2 = ""
+            prefix += "\t"
         }
 
         override fun endVisit(jsonComposite: JSONComposite) {
-            depth--
             prefix = prefix.dropLast(1)
             structure += "\n" + prefix + (if (jsonComposite is JSONObject) "}" else "]")
-
         }
+
     }
-    this.accept(structure)
-    return structure.structure
+    this.accept(strucutre)
+    return strucutre.structure
 }
+
 
 val KClass<*>.dataClassFields: List<KProperty<*>>
     get() {
@@ -273,6 +295,8 @@ fun main() {
     val jarray2 = JSONArray()
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
+
+    jobject.addElement("extra", jobject2)
 
     println(jobject.getStructure())
 
