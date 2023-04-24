@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="testsLibraryJSON" tests="1" skipped="0" failures="0" errors="0" timestamp="2023-04-20T12:55:39" hostname="FONSO" time="0.03">
+<testsuite name="testsLibraryJSON" tests="4" skipped="0" failures="0" errors="0" timestamp="2023-04-24T07:37:15" hostname="FONSO" time="0.479">
   <properties/>
-  <testcase name="testHierarchy()" classname="testsLibraryJSON" time="0.03"/>
+  <testcase name="testHierarchy()" classname="testsLibraryJSON" time="0.046"/>
+  <testcase name="testVerifications()" classname="testsLibraryJSON" time="0.022"/>
+  <testcase name="testInference()" classname="testsLibraryJSON" time="0.003"/>
+  <testcase name="testSearch()" classname="testsLibraryJSON" time="0.405"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

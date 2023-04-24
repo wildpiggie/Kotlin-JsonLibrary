@@ -40,14 +40,16 @@ class testsLibraryJSON {
 
     @Test
     fun testHierarchy() {
-        val jarray2 = JSONArray()
-        jarray2.addElement(JSONString("E1"))
-        jarray2.addElement(JSONNumber(1))
+        val jarray = JSONArray()
+        jarray.addElement(JSONString("E1"))
+        jarray.addElement(JSONNumber(1))
 
         assertEquals("{numero=101101, nome=\"Dave Farley\", internacional=true}", student1.toString())
-        assertEquals("[\"E1\", 1]", jarray2.toString())
+        assertEquals("[\"E1\", 1]", jarray.toString())
         assertEquals("{uc=\"PA\", ects=6.0, data-exame=null, inscritos=[{numero=101101, nome=\"Dave Farley\", internacional=true}, " +
                 "{numero=101102, nome=\"Martin Fowler\", internacional=true}, {numero=26503, nome=\"André Santos\", internacional=false}]}", jobject.toString())
+        assertEquals("{\n\t\"numero\" : 26503,\n\t\"nome\" : \"André Santos\",\n\t\"internacional\" : false\n}", student3.getStructure())
+        assertEquals("[\n\t\"E1\",\n\t1\n]", jarray.getStructure())
     }
 
     @Test
@@ -70,7 +72,6 @@ class testsLibraryJSON {
         assertIs<List<JSONElement>>((jobject.getValuesByProperty("inscritos")[0] as JSONArray).elements)
         assertEquals(students, (jobject.getValuesByProperty("inscritos")[0] as JSONArray).elements as List<JSONElement> )
 
-
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "nome")))
         assertEquals(mutableListOf(), jobject.getJSONObjectWithProperty(listOf("numero", "raiz")))
         assertEquals(students, jobject.getJSONObjectWithProperty(listOf("numero", "internacional")))
@@ -83,6 +84,12 @@ class testsLibraryJSON {
 
     @Test
     fun testVerifications() {
+        var student4 = JSONObject()
+        student4.addElement("numero", JSONString("teste"))
+        student4.addElement("nome", JSONString("André Santos"))
+        student4.addElement("internacional", JSONBoolean(false))
+
+        assertFalse(student4.verifyStructure("numero", JSONNumber::class))
         assertTrue(jobject.verifyStructure("numero", JSONNumber::class))
         assertTrue(jobject.verifyStructure("nome", JSONString::class))
         assertTrue(jobject.verifyStructure("internacional", JSONBoolean::class))
