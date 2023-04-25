@@ -1,4 +1,3 @@
-//import java.util.StringJoiner
 import kotlin.reflect.KClass
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty
@@ -11,7 +10,6 @@ interface Visitor {
     fun visit(jsonComposite: JSONComposite) {}
     fun visit(key: String, value: JSONElement) {}
     fun endVisit(jsonComposite: JSONComposite) {}
-
 }
 
 interface JSONElement {
@@ -155,28 +153,20 @@ fun JSONObject.verifyArrayEquality(property: String) : Boolean {
     val result = object : Visitor {
         var value = true
         var standardMap = mutableMapOf<String, KClass<*>>()
-        var standardList = mutableListOf<KClass<*>>()
 
         override fun visit(key: String, value: JSONElement) {
             if(key == property && value is JSONArray) {
-                when(val firstElement = value.elements[0]) {
-                    is JSONObject -> firstElement.elements.forEach { standardMap[it.key] = it.value::class }
-                    is JSONLeaf<*> -> standardList.add(firstElement::class)
-                }
+
+                if(!value.elements.all { value.elements[0]::class == it::class }) this.value = false
+
+                val firstObject = value.elements[0]
+                if(firstObject is JSONObject) { firstObject.elements.forEach { standardMap[it.key] = it.value::class } }
+
                 value.elements.forEach { it ->
-                    when(it) {
-                        is JSONObject -> {
-                            if(standardMap.keys == it.elements.keys) {
-                                it.elements.forEach {
-                                    if(standardMap[it.key] != it.value::class) this.value = false
-                                }
-                            } else {
-                                this.value = false
-                            }
-                        }
-                        is JSONLeaf<*> -> {
-                            if(it::class != standardList[0]) this.value = false
-                        }
+                    if(it is JSONObject) {
+                        if (standardMap.keys == it.elements.keys) {
+                            it.elements.forEach { if (standardMap[it.key] != it.value::class) this.value = false }
+                        } else { this.value = false }
                     }
                 }
             }
@@ -219,7 +209,7 @@ fun JSONObject.verifyArrayEqualityAlt(property: String): Boolean {
         var value = true
         override fun visit(key: String, value: JSONElement) {
             if(key == property && value is JSONArray) {
-                if(!value.elements.all {value.elements[0].hasSameStructure(it) }) this.value = false
+                if(!value.elements.all {value.elements[0].hasSameStructure(it)}) this.value = false
             }
         }
 

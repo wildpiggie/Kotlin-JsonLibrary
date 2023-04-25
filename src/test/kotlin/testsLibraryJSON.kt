@@ -85,12 +85,6 @@ class testsLibraryJSON {
 
     @Test
     fun testVerifications() {
-        var student4 = JSONObject()
-        student4.addElement("numero", JSONString("teste"))
-        student4.addElement("nome", JSONString("André Santos"))
-        student4.addElement("internacional", JSONBoolean(false))
-
-        assertFalse(student4.verifyStructure("numero", JSONNumber::class))
         assertTrue(jobject.verifyStructure("numero", JSONNumber::class))
         assertTrue(jobject.verifyStructure("nome", JSONString::class))
         assertTrue(jobject.verifyStructure("internacional", JSONBoolean::class))
@@ -98,6 +92,17 @@ class testsLibraryJSON {
         assertTrue(jobject.verifyStructure("data-exame", JSONNull::class))
         assertFalse(jobject.verifyStructure("internacional", JSONArray::class))
         assertFalse(jobject.verifyStructure("numero", JSONString::class))
+
+        assertTrue(jobject.verifyStructure("inexistente", JSONString::class))
+
+        var student4 = JSONObject()
+        studentArray.addElement(student4)
+        student4.addElement("numero", JSONString("teste"))
+        student4.addElement("nome", JSONString("André Santos"))
+        student4.addElement("internacional", JSONBoolean(false))
+
+        assertFalse(jobject.verifyStructure("numero", JSONNumber::class))
+
     }
 
     @Test
@@ -206,7 +211,6 @@ class testsLibraryJSON {
 
 
         // Array com elementos
-
         val jarray = JSONArray()
         jobject.addElement("differentarray", jarray)
         jarray.addElement(JSONString("E1"))
@@ -223,8 +227,21 @@ class testsLibraryJSON {
         assertTrue(jobject.verifyArrayEquality("simplearray"))
         assertTrue(jobject.verifyArrayEqualityAlt("simplearray"))
 
+        // Array com elementos e objetos
+        val jarray3 = JSONArray()
+        jobject.addElement("mixedarray", jarray3)
+        jarray3.addElement(JSONNumber(1))
+        jarray3.addElement(student1)
 
+        assertFalse(jobject.verifyArrayEquality("mixedarray"))
+        assertFalse(jobject.verifyArrayEqualityAlt("mixedarray"))
 
+        // propriedade nao correspondente a um array
+        assertTrue(jobject.verifyArrayEquality("uc"))
+        assertTrue(jobject.verifyArrayEqualityAlt("uc"))
+
+        assertTrue(jobject.verifyArrayEquality("naoexiste"))
+        assertTrue(jobject.verifyArrayEqualityAlt("naoexiste"))
     }
 
     @Test
