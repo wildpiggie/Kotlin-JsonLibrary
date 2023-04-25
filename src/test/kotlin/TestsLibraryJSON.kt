@@ -1,10 +1,10 @@
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
-class testsLibraryJSON {
+class TestsLibraryJSON {
 
     private var jobject = JSONObject()
     private var studentArray = JSONArray()
@@ -12,6 +12,10 @@ class testsLibraryJSON {
     private var student2 = JSONObject()
     private var student3 = JSONObject()
 
+    /*
+     * Creates an example JSON Element hierarchy to be used in testing,
+     * Executed before each test to guarantee consistent results.
+     */
     @BeforeTest
     fun createHierarchy() {
         jobject = JSONObject()
@@ -87,14 +91,48 @@ class testsLibraryJSON {
         //assertEquals(resultT2, jobject.getJSONObjectWithProperty2(listOf("numero", "numero"))) -> fzr a verificaçao dif
     }
 
+    /*
+     * Tests the inference via reflection using the original test hierarchy
+     * as well as a custom hierarchy to verify as many scenarios as possible.
+     */
     @Test
     fun testInference() {
-        val classObject: ClassObject = ClassObject(UC.PA, 6.0, null)
+        val classObject = ClassObject(UC.PA, 6.0, null)
         classObject.addInscrito(StudentObject(101101, "Dave Farley", true))
         classObject.addInscrito(StudentObject(101102, "Martin Fowler", true))
         classObject.addInscrito(StudentObject(26503, "André Santos", false))
 
+        val jsonClassObject: JSONObject = classObject.toJson()
+        assertEquals(jobject.getStructure(), jsonClassObject.getStructure())
 
-        assertEquals(jobject.getStructure(), TODO())
+        val customClassObject = CustomClassObject(
+                StudentObject(0, "A", true),
+                listOf(1, StudentObject(1, "S", false), listOf(1, 2, 3)),
+                mapOf("One point five" to 1.5, "Two point two" to 2.2),
+                1, true, 'x', "stringValue", UC.PGMV, "excluded", false, 99)
+
+        val customJsonElements = customClassObject.toJson().elements
+
+        assertIs<JSONObject>(customJsonElements["student"])
+        val list = customJsonElements["list"]
+        assertIs<JSONArray>(list)
+        assertTrue(list.elements[0] is JSONNumber && list.elements[1] is JSONObject && list.elements[2] is JSONArray)
+        val mapObject = customJsonElements["map"]
+        assertIs<JSONObject>(mapObject)
+        assertTrue(mapObject.elements["One point five"] is JSONNumber && mapObject.elements["Two point two"] is JSONNumber)
+        assertIs<JSONNumber>(customJsonElements["number"])
+        assertEquals(1, (customJsonElements["number"] as JSONNumber).value)
+        assertIs<JSONBoolean>(customJsonElements["boolean"])
+        assertEquals(true, (customJsonElements["boolean"] as JSONBoolean).value)
+        assertIs<JSONString>(customJsonElements["character"])
+        assertEquals("x", (customJsonElements["character"] as JSONString).value)
+        assertIs<JSONString>(customJsonElements["string"])
+        assertEquals("stringValue", (customJsonElements["string"] as JSONString).value)
+        assertIs<JSONString>(customJsonElements["enum"])
+        assertEquals("PGMV", (customJsonElements["enum"] as JSONString).value)
+        assertTrue(!customJsonElements.contains("excluded"))
+        assertTrue(!customJsonElements.contains("truth") && customJsonElements.contains("lie"))
+        assertIs<JSONString>(customJsonElements["numberAsString"])
+        assertEquals("\"99\"", (customJsonElements["numberAsString"] as JSONString).toString())
     }
 }

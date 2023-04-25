@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="testsLibraryJSON" tests="3" skipped="0" failures="0" errors="0" timestamp="2023-04-12T11:44:01" hostname="DESKTOP-PIQ1B4V" time="0.045">
-  <properties/>
-  <testcase name="testHierarchy()" classname="testsLibraryJSON" time="0.027"/>
-  <testcase name="testInference()" classname="testsLibraryJSON" time="0.002"/>
-  <testcase name="testSearch()" classname="testsLibraryJSON" time="0.014"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
