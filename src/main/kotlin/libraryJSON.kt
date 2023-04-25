@@ -153,27 +153,76 @@ fun JSONObject.verifyStructure(property: String, type: KClass<*>) : Boolean {
 
 fun JSONObject.verifyArrayEquality(property: String) : Boolean {
     val result = object : Visitor {
-        var value = false
-        var aux = mutableListOf<JSONObject>()
-        override fun visit(jsonComposite: JSONComposite) {
-            if(jsonComposite is JSONObject) {
-                jsonComposite.elements.forEach {
-                    if(it.key == property && it.value is JSONArray) {
-                        (it.value as JSONArray).elements.forEach {
-                            aux.add(it as JSONObject)
+        var value = true
+        var standardMap = mutableMapOf<String, KClass<*>>()
+        var standardList = mutableListOf<KClass<*>>()
+
+        override fun visit(key: String, value: JSONElement) {
+            if(key == property && value is JSONArray) {
+                when(val firstElement = value.elements[0]) {
+                    is JSONObject -> firstElement.elements.forEach { standardMap[it.key] = it.value::class }
+                    is JSONLeaf<*> -> standardList.add(firstElement::class)
+                }
+                value.elements.forEach { it ->
+                    when(it) {
+                        is JSONObject -> {
+                            if(standardMap.keys == it.elements.keys) {
+                                it.elements.forEach {
+                                    if(standardMap[it.key] != it.value::class) this.value = false
+                                }
+                            } else {
+                                this.value = false
+                            }
                         }
-                        compareObjects(aux)
+                        is JSONLeaf<*> -> {
+                            if(it::class != standardList[0]) this.value = false
+                        }
                     }
                 }
             }
         }
+    }
+    this.accept(result)
+    return result.value
+}
 
-        private fun compareObjects(aux: MutableList<JSONObject>) {
-            var counter = 0
-            aux.forEach {
+fun JSONElement.hasSameStructure(that: JSONElement): Boolean {
+    if(this::class != that::class )
+        return false
 
+    when(this) {
+        is JSONLeaf<*> -> return true
+        is JSONArray -> {
+            if(this.elements.size != (that as JSONArray).elements.size)
+                return false
+            this.elements.zip(that.elements).forEach {
+                if(!it.first.hasSameStructure(it.second))
+                    return false
             }
         }
+        is JSONObject -> {
+            if(this.elements.size != (that as JSONObject).elements.size)
+                return false
+            if(this.elements.keys != that.elements.keys)
+                return false
+            for(key in this.elements.keys){
+                if(!this.elements[key]!!.hasSameStructure(that.elements[key]!!))
+                    return false
+            }
+        }
+    }
+
+    return true
+}
+fun JSONObject.verifyArrayEqualityAlt(property: String): Boolean {
+    val result = object : Visitor {
+        var value = true
+        override fun visit(key: String, value: JSONElement) {
+            if(key == property && value is JSONArray) {
+                if(!value.elements.all {value.elements[0].hasSameStructure(it) }) this.value = false
+            }
+        }
+
     }
     this.accept(result)
     return result.value
@@ -278,13 +327,54 @@ fun main() {
     jobject4.addElement("nome", JSONString("André Santo"))
     jobject4.addElement("internacional", JSONBoolean(false))
 
+    val jobject5 = JSONObject()
+    //jobject4.addElement("objeto", jobject5)
+    jobject5.addElement("numero", JSONNumber(26503))
+    jobject5.addElement("nome", JSONNumber(1))
+    jobject5.addElement("internacional", JSONBoolean(false))
+
+    val jobject6 = JSONObject()
+    //jobject4.addElement("objeto", jobject5)
+    jobject6.addElement("numero", JSONNumber(2653))
+    jobject6.addElement("nome", JSONNumber(2))
+    jobject6.addElement("internacional", JSONBoolean(false))
+
+    val jobject7 = JSONObject()
+    //jobject4.addElement("objeto", jobject5)
+    jobject7.addElement("numero", JSONNumber(2653))
+    jobject7.addElement("nome", JSONString("Afonso"))
+    jobject7.addElement("internacional", JSONBoolean(false))
+
     val jarray2 = JSONArray()
     jarray2.addElement(JSONString("E1"))
     jarray2.addElement(JSONNumber(1))
 
+    jobject2.addElement("objeto", jobject5)
+    jobject3.addElement("objeto", jobject6)
+    jobject4.addElement("objeto", jobject5)
+
     //jobject.addElement("extra", jobject2)
 
     println(jobject.getStructure())
+    println(jobject.verifyArrayEquality("inscritos"))
+
+    /**var auxArray = JSONArray()
+    jobject.addElement("auxiliar", auxArray)
+
+    var student4 = JSONObject()
+    auxArray.addElement(student4)
+    student4.addElement("numero", JSONString("teste"))
+    student4.addElement("nome", JSONString("André Santos"))
+    student4.addElement("internacional", JSONBoolean(false))
+
+    var student5 = JSONObject()
+    auxArray.addElement(student5)
+    student5.addElement("numero", JSONString("teste"))
+    student5.addElement("nome", JSONString("André Santo"))
+    student5.addElement("internacional", JSONBoolean(false))
+
+    println(jobject.verifyArrayEquality("auxiliar"))
+    **/
 
 }
 
