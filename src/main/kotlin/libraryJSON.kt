@@ -184,6 +184,12 @@ fun JSONElement.getStructure(): String {
     return structure.structure
 }
 
+/*
+ * Instantiates this object as a JSON Object through reflection
+ * considering any JSON annotations associated to any properties.
+ *
+ * @return the JSON Object of the instantiated class.
+ */
 fun Any.toJson(): JSONObject {
     val rootObject = JSONObject()
     val list = this::class.dataClassFields
@@ -196,14 +202,19 @@ fun Any.toJson(): JSONObject {
         if (it.hasAnnotation<JsonAsString>())
             rootObject.addElement(name, JSONString(it.call(this).toString()))
         else {
-            val element: JSONElement = it.call(this).mapElement()
+            val element: JSONElement = it.call(this).mapAsJson()
             rootObject.addElement(name, element)
         }
     }
     return rootObject
 }
 
-private fun Any?.mapElement(): JSONElement =
+/*
+ * Maps this object to its corresponding JSON Element object.
+ *
+ * @return the JSON element of the corresponding object.
+ */
+private fun Any?.mapAsJson(): JSONElement =
     when (this) {
         is Number -> JSONNumber(this)
         is String -> JSONString(this)
@@ -216,24 +227,40 @@ private fun Any?.mapElement(): JSONElement =
         else -> if (this::class.isData) this.toJson() else JSONNull()
     }
 
+/*
+ * Obtains the corresponding JSON Element of each item in this iterable.
+ *
+ * @return JSON Array containing all elements of the iterable as JSON Elements.
+ */
 private fun Iterable<*>.getArrayElements(): JSONArray {
     val jsonArray = JSONArray()
 
     this.forEach { arrayElement ->
-        jsonArray.addElement(arrayElement.mapElement())
+        jsonArray.addElement(arrayElement.mapAsJson())
     }
     return jsonArray
 }
 
+/*
+ * Obtains the corresponding JSON Element and name of each item in this map.
+ *
+ * @return JSON Object containing all elements of the map as JSON Elements with their corresponding names.
+ */
 private fun Map<*, *>.getMapElements(): JSONObject {
     val jsonObject = JSONObject()
 
     this.forEach { mapEntry ->
-        jsonObject.addElement(mapEntry.key.toString(), mapEntry.value.mapElement())
+        jsonObject.addElement(mapEntry.key.toString(), mapEntry.value.mapAsJson())
     }
     return jsonObject
 }
 
+/*
+ * Obtains a list containing all KProperties of this KClass, this KClass must be a data class.
+ *
+ * @return list of all KProperties contained in this KClass if it is a data class.
+ * @throws IllegalArgumentException if this KClass does not correspond to a data class
+ */
 private val KClass<*>.dataClassFields: List<KProperty<*>>
     get() {
         require(isData) { "instance must be data class" }
@@ -242,12 +269,29 @@ private val KClass<*>.dataClassFields: List<KProperty<*>>
         }
     }
 
+
+/*
+ * Annotations used to tag class properties used when instantiating the corresponding JSON Object.
+ */
+
+/*
+ * Excludes a property from being instantiated.
+ */
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonExclude()
 
+/*
+ * Sets a custom name for the json element of a certain property,
+ * when instantiating the corresponding JSON Object.
+ *
+ * @param name the custom name to be used for the json element.
+ */
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonName(val name: String)
 
+/*
+ * Forces a certain property to be considered a string when instantiating the corresponding JSON Object.
+ */
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonAsString()
 

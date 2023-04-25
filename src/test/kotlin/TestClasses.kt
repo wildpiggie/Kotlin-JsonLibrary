@@ -1,3 +1,7 @@
+/*
+ * Custom classes and enums to be used in testing.
+ */
+
 enum class UC {
     PA, EPCS, PGMV, ICO, GCCO
 }

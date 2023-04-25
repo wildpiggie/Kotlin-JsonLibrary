@@ -12,6 +12,10 @@ class TestsLibraryJSON {
     private var student2 = JSONObject()
     private var student3 = JSONObject()
 
+    /*
+     * Creates an example JSON Element hierarchy to be used in testing,
+     * Executed before each test to guarantee consistent results.
+     */
     @BeforeTest
     fun createHierarchy() {
         jobject = JSONObject()
@@ -87,6 +91,10 @@ class TestsLibraryJSON {
         //assertEquals(resultT2, jobject.getJSONObjectWithProperty2(listOf("numero", "numero"))) -> fzr a verificaçao dif
     }
 
+    /*
+     * Tests the inference via reflection using the original test hierarchy
+     * as well as a custom hierarchy to verify as many scenarios as possible.
+     */
     @Test
     fun testInference() {
         val classObject = ClassObject(UC.PA, 6.0, null)
