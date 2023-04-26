@@ -5,7 +5,7 @@ import kotlin.reflect.full.*
 interface Visitor {
     fun visit(jsonLeaf: JsonLeaf<*>) {}
     fun visit(jsonComposite: JsonComposite) {}
-    fun visit(key: String, jsonElement: JsonElement) {}
+    fun visit(name: String, jsonElement: JsonElement) {}
     fun endVisit(jsonComposite: JsonComposite) {}
 }
 
@@ -107,11 +107,11 @@ class JsonNull : JsonLeaf<Any?>(null) {
     }
 }
 
-fun JsonObject.getValuesOfProperty(name: String): List<JsonElement> {
+fun JsonObject.getValuesOfProperty(propertyName: String): List<JsonElement> {
     val result = object : Visitor {
         val elementList = mutableListOf<JsonElement>()
-        override fun visit(key: String, jsonElement: JsonElement) {
-            if(key == name) elementList.add(jsonElement)
+        override fun visit(name: String, jsonElement: JsonElement) {
+            if(propertyName == name) elementList.add(jsonElement)
         }
     }
     this.accept(result)
@@ -132,11 +132,11 @@ fun JsonObject.getJsonObjectWithProperties(properties: List<String>): List<JsonO
 }
 
 //Não termina logo que chega a um de tipo errado, há forma de mudar o comportamento?
-fun JsonObject.isPropertyOfType(name: String, type: KClass<*>) : Boolean {
+fun JsonObject.isPropertyOfType(propertyName: String, type: KClass<*>) : Boolean {
     val result = object : Visitor {
         var value = true
-        override fun visit(key: String, jsonElement: JsonElement) {
-            if(key == name && jsonElement::class != type)
+        override fun visit(name: String, jsonElement: JsonElement) {
+            if(propertyName == name && jsonElement::class != type)
                 this.value = false
         }
     }
@@ -149,8 +149,8 @@ fun JsonObject.isArrayStructureHomogenousShallow(arrayName: String) : Boolean {
         var value = true
         var standardMap = mutableMapOf<String, KClass<*>>()
 
-        override fun visit(key: String, jsonElement: JsonElement) {
-            if(key == arrayName && jsonElement is JsonArray) {
+        override fun visit(name: String, jsonElement: JsonElement) {
+            if(name == arrayName && jsonElement is JsonArray) {
                 if(!jsonElement.elements.all { jsonElement.elements.first()::class == it::class }) this.value = false
 
                 val firstElement = jsonElement.elements.first()
@@ -198,11 +198,11 @@ private fun JsonElement.hasSameStructure(that: JsonElement): Boolean {
     }
     return true
 }
-fun JsonObject.isArrayStructureHomogenousDeep(name: String): Boolean {
+fun JsonObject.isArrayStructureHomogenousDeep(arrayName: String): Boolean {
     val result = object : Visitor {
         var value = true
-        override fun visit(key: String, jsonElement: JsonElement) {
-            if(key == name && jsonElement is JsonArray)
+        override fun visit(name: String, jsonElement: JsonElement) {
+            if(arrayName == name && jsonElement is JsonArray)
                 if(!jsonElement.elements.all {jsonElement.elements[0].hasSameStructure(it)}) this.value = false
         }
     }
@@ -211,59 +211,55 @@ fun JsonObject.isArrayStructureHomogenousDeep(name: String): Boolean {
 }
 
 fun JsonElement.getStructure() : String {
-    val structure = object : Visitor {
+    val result = object : Visitor {
         var structure: String = ""
-        private var prefix: String = ""
-        private var prefix2: String= ""
+        var prefix: String = ""
+        var postfix: String= ""
 
-        override fun visit(key: String, jsonElement: JsonElement) {
+        override fun visit(name: String, jsonElement: JsonElement) {
             when(jsonElement) {
                 is JsonLeaf<*> -> {
-                    structure += prefix2 + "\n" + prefix + (if (key.isEmpty()) "" else "\"$key\" : ") + jsonElement
-                    prefix2 = ","
+                    structure += "$postfix\n$prefix\"$name\" : $jsonElement"
+                    postfix = ","
                 }
 
-                is JsonArray -> updateStructure(key,jsonElement)
-
-                is JsonObject -> updateStructure(key,jsonElement)
+                is JsonComposite -> {
+                    if (structure.isNotEmpty()) structure += postfix + "\n"
+                    structure += "$prefix\"$name\" : " + if(jsonElement is JsonObject) "{" else "["
+                    updatePrefixAndPostfix()
+                }
             }
         }
 
-        fun updateStructure(name: String, jsonComposite: JsonComposite) {
-            if (structure.isNotEmpty()) structure += prefix2 + "\n"
-            structure += "$prefix\"$name\" : " + if(jsonComposite is JsonObject) "{" else "["
-            updatePrefix()
-        }
-
         override fun visit(jsonLeaf: JsonLeaf<*>) {
-            structure += prefix2 + "\n" + prefix + jsonLeaf
-            prefix2 = ","
+            structure += postfix + "\n" + prefix + jsonLeaf
+            postfix = ","
         }
 
         override fun visit(jsonComposite: JsonComposite) {
-            if(structure.isNotEmpty()) structure += prefix2 + "\n"
+            if(structure.isNotEmpty()) structure += postfix + "\n"
             structure += prefix + if(jsonComposite is JsonObject) "{" else "["
-            updatePrefix()
-        }
-
-        fun updatePrefix() {
-            prefix2 = ""
-            prefix += "\t"
+            updatePrefixAndPostfix()
         }
 
         override fun endVisit(jsonComposite: JsonComposite) {
             prefix = prefix.dropLast(1)
             structure += "\n" + prefix + (if (jsonComposite is JsonObject) "}" else "]")
         }
+
+        fun updatePrefixAndPostfix() {
+            prefix += "\t"
+            postfix = ""
+        }
     }
-    this.accept(structure)
-    return structure.structure
+    this.accept(result)
+    return result.structure
 }
 
 /**
  * Maps this object to its corresponding JSON Element object.
  *
- * @return the JSON element of the corresponding object.
+ * @return the JSON Element of the corresponding object.
  */
 fun Any?.toJson(): JsonElement =
     when (this) {
