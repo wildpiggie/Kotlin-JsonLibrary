@@ -11,7 +11,7 @@ interface Visitor {
 
 interface JsonElement {
     fun accept(visitor: Visitor) {}
-    fun accept(visitor: Visitor, key: String) {}
+    fun accept(visitor: Visitor, name: String) {}
 }
 
 abstract class JsonComposite : JsonElement {
@@ -22,8 +22,8 @@ abstract class JsonLeaf<T>(val value: T) : JsonElement {
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
     }
-    override fun accept(visitor: Visitor, key: String) {
-        visitor.visit(key, this)
+    override fun accept(visitor: Visitor, name: String) {
+        visitor.visit(name, this)
     }
 }
 
@@ -38,8 +38,8 @@ class JsonObject() : JsonComposite() {
         visitChildren(visitor)
     }
 
-    override fun accept(visitor: Visitor, key: String) {
-        visitor.visit(key, this)
+    override fun accept(visitor: Visitor, name: String) {
+        visitor.visit(name, this)
         visitChildren(visitor)
     }
 
@@ -66,8 +66,8 @@ class JsonArray() : JsonComposite() {
         visitChildren(visitor)
     }
 
-    override fun accept(visitor: Visitor, key: String) {
-        visitor.visit(key, this)
+    override fun accept(visitor: Visitor, name: String) {
+        visitor.visit(name, this)
         visitChildren(visitor)
     }
 
@@ -107,11 +107,11 @@ class JsonNull : JsonLeaf<Any?>(null) {
     }
 }
 
-fun JsonObject.getValuesByProperty(property: String): List<JsonElement> {
+fun JsonObject.getValuesOfProperty(name: String): List<JsonElement> {
     val result = object : Visitor {
-        var elementList = mutableListOf<JsonElement>()
+        val elementList = mutableListOf<JsonElement>()
         override fun visit(key: String, value: JsonElement) {
-            if(key == property) elementList.add(value)
+            if(key == name) elementList.add(value)
         }
     }
     this.accept(result)
@@ -120,41 +120,37 @@ fun JsonObject.getValuesByProperty(property: String): List<JsonElement> {
 
 fun JsonObject.getJsonObjectWithProperty(list: List<String>): List<JsonObject> {
     val result = object : Visitor {
-        var elementList = mutableListOf<JsonObject>()
-        private var counter = 0
-        private var uniqueList = list.distinct()
+        val elementList = mutableListOf<JsonObject>()
         override fun visit(jsonComposite: JsonComposite) {
-            counter = 0
-            if (jsonComposite is JsonObject) {
-                jsonComposite.elements.keys.forEach {
-                    if (list.contains(it)) counter++
-                }
-                if(counter == uniqueList.size && list.isNotEmpty()) elementList.add(jsonComposite)
-            }
+            if (jsonComposite is JsonObject)
+                if(jsonComposite.elements.keys.containsAll(list))
+                    elementList.add(jsonComposite)
         }
     }
     this.accept(result)
     return result.elementList
 }
 
-fun JsonObject.isPropertyOfType(property: String, type: KClass<*>) : Boolean {
+//Não termina logo que chega a um de tipo errado, há forma de mudar o comportamento?
+fun JsonObject.isPropertyOfType(name: String, type: KClass<*>) : Boolean {
     val result = object : Visitor {
         var value = true
         override fun visit(key: String, value: JsonElement) {
-            if(key == property && value::class != type) this.value = false
+            if(key == name && value::class != type)
+                this.value = false
         }
     }
     this.accept(result)
     return result.value
 }
 
-fun JsonObject.isArrayStructureHomogenous(property: String) : Boolean {
+fun JsonObject.isArrayStructureHomogenous(name: String) : Boolean {
     val result = object : Visitor {
         var value = true
         var standardMap = mutableMapOf<String, KClass<*>>()
 
         override fun visit(key: String, value: JsonElement) {
-            if(key == property && value is JsonArray) {
+            if(key == name && value is JsonArray) {
 
                 if(!value.elements.all { value.elements[0]::class == it::class }) this.value = false
 
@@ -204,11 +200,11 @@ private fun JsonElement.hasSameStructure(that: JsonElement): Boolean {
 
     return true
 }
-fun JsonObject.isArrayStructureHomogenousAlt(property: String): Boolean {
+fun JsonObject.isArrayStructureHomogenousAlt(name: String): Boolean {
     val result = object : Visitor {
         var value = true
         override fun visit(key: String, value: JsonElement) {
-            if(key == property && value is JsonArray) {
+            if(key == name && value is JsonArray) {
                 if(!value.elements.all {value.elements[0].hasSameStructure(it)}) this.value = false
             }
         }
@@ -237,14 +233,14 @@ fun JsonElement.getStructure() : String {
             }
         }
 
-        fun updateStructure(key: String, jsonComposite: JsonComposite) {
+        fun updateStructure(name: String, jsonComposite: JsonComposite) {
             if (structure.isNotEmpty()) structure += prefix2 + "\n"
-            structure += "$prefix\"$key\" : " + if(jsonComposite is JsonObject) "{" else "["
+            structure += "$prefix\"$name\" : " + if(jsonComposite is JsonObject) "{" else "["
             updatePrefix()
         }
 
-        override fun visit(value: JsonLeaf<*>) {
-            structure += prefix2 + "\n" + prefix + value
+        override fun visit(jsonLeaf: JsonLeaf<*>) {
+            structure += prefix2 + "\n" + prefix + jsonLeaf
             prefix2 = ","
         }
 

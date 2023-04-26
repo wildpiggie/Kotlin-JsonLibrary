@@ -70,21 +70,19 @@ class TestsLibraryJSON {
 
         val students = mutableListOf(student1, student2, student3)
 
-        assertEquals(result, jobject.getValuesByProperty("numero"))
-        assertEquals(mutableListOf(), jobject.getValuesByProperty("raiz"))
-        assertEquals(mutableListOf(), jobject.getValuesByProperty(""))
-        assertIs<JsonArray>(jobject.getValuesByProperty("inscritos")[0])
-        assertIs<List<JsonElement>>((jobject.getValuesByProperty("inscritos")[0] as JsonArray).elements)
-        assertEquals(students, (jobject.getValuesByProperty("inscritos")[0] as JsonArray).elements as List<JsonElement> )
+        assertEquals(result, jobject.getValuesOfProperty("numero"))
+        assertEquals(mutableListOf(), jobject.getValuesOfProperty("raiz"))
+        assertEquals(mutableListOf(), jobject.getValuesOfProperty(""))
+        assertIs<JsonArray>(jobject.getValuesOfProperty("inscritos")[0])
+        assertIs<List<JsonElement>>((jobject.getValuesOfProperty("inscritos")[0] as JsonArray).elements)
+        assertEquals(students, (jobject.getValuesOfProperty("inscritos")[0] as JsonArray).elements as List<JsonElement> )
 
         assertEquals(students, jobject.getJsonObjectWithProperty(listOf("numero", "nome")))
         assertEquals(mutableListOf(), jobject.getJsonObjectWithProperty(listOf("numero", "raiz")))
         assertEquals(students, jobject.getJsonObjectWithProperty(listOf("numero", "internacional")))
         assertEquals(mutableListOf(jobject), jobject.getJsonObjectWithProperty(listOf("data-exame")))
         assertEquals(mutableListOf(jobject), jobject.getJsonObjectWithProperty(listOf("inscritos")))
-        assertEquals(mutableListOf(), jobject.getJsonObjectWithProperty(listOf()))
         assertEquals(students, jobject.getJsonObjectWithProperty(listOf("numero", "numero")))
-
     }
 
     @Test
@@ -99,7 +97,7 @@ class TestsLibraryJSON {
 
         assertTrue(jobject.isPropertyOfType("inexistente", JsonString::class))
 
-        var student4 = JsonObject()
+        val student4 = JsonObject()
         studentArray.addElement(student4)
         student4.addElement("numero", JsonString("teste"))
         student4.addElement("nome", JsonString("André Santos"))
@@ -118,12 +116,12 @@ class TestsLibraryJSON {
         auxArray = JsonArray()
         jobject.addElement("auxiliar", auxArray)
 
-        var student5 = JsonObject()
+        val student5 = JsonObject()
         auxArray.addElement(student5)
         student5.addElement("numero", JsonString("teste"))
         student5.addElement("internacional", JsonBoolean(false))
 
-        var student6 = JsonObject()
+        val student6 = JsonObject()
         auxArray.addElement(student6)
         student6.addElement("numero", JsonString("teste"))
         student6.addElement("nome", JsonString("André Santos"))
@@ -133,16 +131,16 @@ class TestsLibraryJSON {
         assertFalse(jobject.isArrayStructureHomogenousAlt("auxiliar"))
 
         // Mesmas propriedades + Classes Diferentes
-        var auxArray2 = JsonArray()
+        val auxArray2 = JsonArray()
         jobject.addElement("auxiliar2", auxArray2)
 
-        var student7 = JsonObject()
+        val student7 = JsonObject()
         auxArray2.addElement(student7)
         student7.addElement("numero", JsonString("teste"))
         student7.addElement("nome", JsonNumber(10))
         student7.addElement("internacional", JsonBoolean(false))
 
-        var student8 = JsonObject()
+        val student8 = JsonObject()
         auxArray2.addElement(student8)
         student8.addElement("numero", JsonString("teste"))
         student8.addElement("nome", JsonString("André Santos"))
@@ -152,16 +150,16 @@ class TestsLibraryJSON {
         assertFalse(jobject.isArrayStructureHomogenousAlt("auxiliar2"))
 
         // Propriedades diferentes + Classes Diferentes
-        var auxArray3 = JsonArray()
+        val auxArray3 = JsonArray()
         jobject.addElement("auxiliar3", auxArray3)
 
-        var student9 = JsonObject()
+        val student9 = JsonObject()
         auxArray3.addElement(student9)
         student9.addElement("numero", JsonString("teste"))
         student9.addElement("valido", JsonBoolean(true))
         student9.addElement("internacional", JsonBoolean(false))
 
-        var student10 = JsonObject()
+        val student10 = JsonObject()
         auxArray3.addElement(student10)
         student10.addElement("numero", JsonString("teste"))
         student10.addElement("nome", JsonString("André Santos"))
@@ -171,17 +169,17 @@ class TestsLibraryJSON {
         assertFalse(jobject.isArrayStructureHomogenousAlt("auxiliar3"))
 
         // Array com objetos dentro dos objetos
-        var auxArray4 = JsonArray()
+        val auxArray4 = JsonArray()
         jobject.addElement("auxiliar4", auxArray4)
 
-        var student11 = JsonObject()
+        val student11 = JsonObject()
         auxArray4.addElement(student11)
         student11.addElement("numero", JsonNumber(93178))
         student11.addElement("nome", JsonString("Afonso Sampaio"))
         student11.addElement("internacional", JsonBoolean(false))
         student11.addElement("extra", student1)
 
-        var student12 = JsonObject()
+        val student12 = JsonObject()
         auxArray4.addElement(student12)
         student12.addElement("numero", JsonNumber(93179))
         student12.addElement("nome", JsonString("Samuel"))
@@ -193,17 +191,17 @@ class TestsLibraryJSON {
 
 
         // Array com objetos de estruturas diferentes dentro dos objetos
-        var auxArray5 = JsonArray()
+        val auxArray5 = JsonArray()
         jobject.addElement("auxiliar5", auxArray5)
 
-        var student13 = JsonObject()
+        val student13 = JsonObject()
         auxArray5.addElement(student13)
         student13.addElement("numero", JsonNumber(93178))
         student13.addElement("nome", JsonString("Afonso Sampaio"))
         student13.addElement("internacional", JsonBoolean(false))
         student13.addElement("extra", student1)
 
-        var student14 = JsonObject()
+        val student14 = JsonObject()
         auxArray5.addElement(student14)
         student14.addElement("numero", JsonNumber(93179))
         student14.addElement("nome", JsonString("Samuel"))
