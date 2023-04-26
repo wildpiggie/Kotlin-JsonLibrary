@@ -5,7 +5,7 @@ import kotlin.reflect.full.*
 interface Visitor {
     fun visit(jsonLeaf: JsonLeaf<*>) {}
     fun visit(jsonComposite: JsonComposite) {}
-    fun visit(key: String, value: JsonElement) {}
+    fun visit(key: String, jsonElement: JsonElement) {}
     fun endVisit(jsonComposite: JsonComposite) {}
 }
 
@@ -110,20 +110,20 @@ class JsonNull : JsonLeaf<Any?>(null) {
 fun JsonObject.getValuesOfProperty(name: String): List<JsonElement> {
     val result = object : Visitor {
         val elementList = mutableListOf<JsonElement>()
-        override fun visit(key: String, value: JsonElement) {
-            if(key == name) elementList.add(value)
+        override fun visit(key: String, jsonElement: JsonElement) {
+            if(key == name) elementList.add(jsonElement)
         }
     }
     this.accept(result)
     return result.elementList
 }
 
-fun JsonObject.getJsonObjectWithProperty(list: List<String>): List<JsonObject> {
+fun JsonObject.getJsonObjectWithProperties(properties: List<String>): List<JsonObject> {
     val result = object : Visitor {
         val elementList = mutableListOf<JsonObject>()
         override fun visit(jsonComposite: JsonComposite) {
             if (jsonComposite is JsonObject)
-                if(jsonComposite.elements.keys.containsAll(list))
+                if(jsonComposite.elements.keys.containsAll(properties))
                     elementList.add(jsonComposite)
         }
     }
@@ -135,8 +135,8 @@ fun JsonObject.getJsonObjectWithProperty(list: List<String>): List<JsonObject> {
 fun JsonObject.isPropertyOfType(name: String, type: KClass<*>) : Boolean {
     val result = object : Visitor {
         var value = true
-        override fun visit(key: String, value: JsonElement) {
-            if(key == name && value::class != type)
+        override fun visit(key: String, jsonElement: JsonElement) {
+            if(key == name && jsonElement::class != type)
                 this.value = false
         }
     }
@@ -144,23 +144,23 @@ fun JsonObject.isPropertyOfType(name: String, type: KClass<*>) : Boolean {
     return result.value
 }
 
-fun JsonObject.isArrayStructureHomogenous(name: String) : Boolean {
+fun JsonObject.isArrayStructureHomogenousShallow(arrayName: String) : Boolean {
     val result = object : Visitor {
         var value = true
         var standardMap = mutableMapOf<String, KClass<*>>()
 
-        override fun visit(key: String, value: JsonElement) {
-            if(key == name && value is JsonArray) {
+        override fun visit(key: String, jsonElement: JsonElement) {
+            if(key == arrayName && jsonElement is JsonArray) {
+                if(!jsonElement.elements.all { jsonElement.elements.first()::class == it::class }) this.value = false
 
-                if(!value.elements.all { value.elements[0]::class == it::class }) this.value = false
+                val firstElement = jsonElement.elements.first()
 
-                val firstObject = value.elements[0]
-                if(firstObject is JsonObject) { firstObject.elements.forEach { standardMap[it.key] = it.value::class } }
+                if(this.value && firstElement is JsonObject) {
+                    firstElement.elements.forEach { standardMap[it.key] = it.value::class }
 
-                value.elements.forEach { it ->
-                    if(it is JsonObject) {
-                        if (standardMap.keys == it.elements.keys) {
-                            it.elements.forEach { if (standardMap[it.key] != it.value::class) this.value = false }
+                    jsonElement.elements.forEach { arrayElement ->
+                        if (standardMap.keys == (arrayElement as JsonObject).elements.keys) {
+                            arrayElement.elements.forEach { if (standardMap[it.key] != it.value::class) this.value = false }
                         } else { this.value = false }
                     }
                 }
@@ -177,7 +177,6 @@ private fun JsonElement.hasSameStructure(that: JsonElement): Boolean {
         return false
 
     when(this) {
-        is JsonLeaf<*> -> return true
         is JsonArray -> {
             if(this.elements.size != (that as JsonArray).elements.size)
                 return false
@@ -197,18 +196,15 @@ private fun JsonElement.hasSameStructure(that: JsonElement): Boolean {
             }
         }
     }
-
     return true
 }
-fun JsonObject.isArrayStructureHomogenousAlt(name: String): Boolean {
+fun JsonObject.isArrayStructureHomogenousDeep(name: String): Boolean {
     val result = object : Visitor {
         var value = true
-        override fun visit(key: String, value: JsonElement) {
-            if(key == name && value is JsonArray) {
-                if(!value.elements.all {value.elements[0].hasSameStructure(it)}) this.value = false
-            }
+        override fun visit(key: String, jsonElement: JsonElement) {
+            if(key == name && jsonElement is JsonArray)
+                if(!jsonElement.elements.all {jsonElement.elements[0].hasSameStructure(it)}) this.value = false
         }
-
     }
     this.accept(result)
     return result.value
@@ -220,16 +216,16 @@ fun JsonElement.getStructure() : String {
         private var prefix: String = ""
         private var prefix2: String= ""
 
-        override fun visit(key: String, value: JsonElement) {
-            when(value) {
+        override fun visit(key: String, jsonElement: JsonElement) {
+            when(jsonElement) {
                 is JsonLeaf<*> -> {
-                    structure += prefix2 + "\n" + prefix + (if (key.isEmpty()) "" else "\"$key\" : ") + value
+                    structure += prefix2 + "\n" + prefix + (if (key.isEmpty()) "" else "\"$key\" : ") + jsonElement
                     prefix2 = ","
                 }
 
-                is JsonArray -> updateStructure(key,value)
+                is JsonArray -> updateStructure(key,jsonElement)
 
-                is JsonObject -> updateStructure(key,value)
+                is JsonObject -> updateStructure(key,jsonElement)
             }
         }
 
@@ -264,13 +260,32 @@ fun JsonElement.getStructure() : String {
     return structure.structure
 }
 
-/*
+/**
+ * Maps this object to its corresponding JSON Element object.
+ *
+ * @return the JSON element of the corresponding object.
+ */
+fun Any?.toJson(): JsonElement =
+    when (this) {
+        is Number -> JsonNumber(this)
+        is String -> JsonString(this)
+        is Char -> JsonString(this.toString())
+        is Boolean -> JsonBoolean(this)
+        is Enum<*> -> JsonString(this.name)
+        is Map<*, *> -> this.getMapElements()
+        is Iterable<*> -> this.getArrayElements()
+        null -> JsonNull()
+        else -> if (this::class.isData) this.getObjectElements() else JsonNull()
+    }
+
+/**
  * Instantiates this object as a JSON Object through reflection
  * considering any JSON annotations associated to any properties.
  *
- * @return the JSON Object of the instantiated class.
+ * @return JSON Object of the instantiated class.
  */
-fun Any.toJson(): JsonObject {
+private fun Any.getObjectElements(): JsonObject {
+
     val rootObject = JsonObject()
     val list = this::class.dataClassFields
     for (it in list) {
@@ -282,32 +297,14 @@ fun Any.toJson(): JsonObject {
         if (it.hasAnnotation<JsonAsString>())
             rootObject.addElement(name, JsonString(it.call(this).toString()))
         else {
-            val element: JsonElement = it.call(this).mapAsJson()
+            val element: JsonElement = it.call(this).toJson()
             rootObject.addElement(name, element)
         }
     }
     return rootObject
 }
 
-/*
- * Maps this object to its corresponding JSON Element object.
- *
- * @return the JSON element of the corresponding object.
- */
-private fun Any?.mapAsJson(): JsonElement =
-    when (this) {
-        is Number -> JsonNumber(this)
-        is String -> JsonString(this)
-        is Char -> JsonString(this.toString())
-        is Boolean -> JsonBoolean(this)
-        is Enum<*> -> JsonString(this.name)
-        is Map<*, *> -> this.getMapElements()
-        is Iterable<*> -> this.getArrayElements()
-        null -> JsonNull()
-        else -> if (this::class.isData) this.toJson() else JsonNull()
-    }
-
-/*
+/**
  * Obtains the corresponding JSON Element of each item in this iterable.
  *
  * @return JSON Array containing all elements of the iterable as JSON Elements.
@@ -316,12 +313,12 @@ private fun Iterable<*>.getArrayElements(): JsonArray {
     val jsonArray = JsonArray()
 
     this.forEach { arrayElement ->
-        jsonArray.addElement(arrayElement.mapAsJson())
+        jsonArray.addElement(arrayElement.toJson())
     }
     return jsonArray
 }
 
-/*
+/**
  * Obtains the corresponding JSON Element and name of each item in this map.
  *
  * @return JSON Object containing all elements of the map as JSON Elements with their corresponding names.
@@ -330,12 +327,12 @@ private fun Map<*, *>.getMapElements(): JsonObject {
     val jsonObject = JsonObject()
 
     this.forEach { mapEntry ->
-        jsonObject.addElement(mapEntry.key.toString(), mapEntry.value.mapAsJson())
+        jsonObject.addElement(mapEntry.key.toString(), mapEntry.value.toJson())
     }
     return jsonObject
 }
 
-/*
+/**
  * Obtains a list containing all KProperties of this KClass, this KClass must be a data class.
  *
  * @return list of all KProperties contained in this KClass if it is a data class.
@@ -349,18 +346,17 @@ private val KClass<*>.dataClassFields: List<KProperty<*>>
         }
     }
 
-
 /*
  * Annotations used to tag class properties used when instantiating the corresponding JSON Object.
  */
 
-/*
+/**
  * Excludes a property from being instantiated.
  */
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonExclude()
 
-/*
+/**
  * Sets a custom name for the json element of a certain property,
  * when instantiating the corresponding JSON Object.
  *
@@ -369,7 +365,7 @@ annotation class JsonExclude()
 @Target(AnnotationTarget.PROPERTY)
 annotation class JsonName(val name: String)
 
-/*
+/**
  * Forces a certain property to be considered a string when instantiating the corresponding JSON Object.
  */
 @Target(AnnotationTarget.PROPERTY)
