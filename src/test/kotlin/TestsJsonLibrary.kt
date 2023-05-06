@@ -166,7 +166,9 @@ class TestsJsonLibrary {
         assertTrue(jobject.isArrayStructureHomogenousShallow("inscritos"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("inscritos"))
 
-        // Array com elementos
+        /**
+         * Tests on JSON Arrays with JSON Elements.
+         */
         val nonHomogenousArray = JsonArray()
         jobject.addElement("nonHomogenousArray", nonHomogenousArray)
         nonHomogenousArray.addElement(JsonString("E1"))
@@ -183,7 +185,9 @@ class TestsJsonLibrary {
         assertTrue(jobject.isArrayStructureHomogenousShallow("homogenousArray"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("homogenousArray"))
 
-        // Array com elementos e objetos
+        /**
+         * Tests on JSON Arrays with JSON Elements and JSON Objects
+         */
         val mixedArray = JsonArray()
         jobject.addElement("mixedArray", mixedArray)
         mixedArray.addElement(JsonNumber(1))
@@ -192,14 +196,18 @@ class TestsJsonLibrary {
         assertFalse(jobject.isArrayStructureHomogenousShallow("mixedArray"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("mixedArray"))
 
-        // propriedade nao correspondente a um array
+        /**
+         * Tests on JSON Objects with properties not associated to JSON Arrays.
+         */
         assertTrue(jobject.isArrayStructureHomogenousShallow("uc"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("uc"))
 
         assertTrue(jobject.isArrayStructureHomogenousShallow("naoexiste"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("naoexiste"))
 
-        // Propriedades a menos + Classes Iguais
+        /**
+         * Tests on JSON Arrays with missing properties.
+         */
         val arrayWithMissingProperty = JsonArray()
         jobject.addElement("testArrayWithMissingProperty", arrayWithMissingProperty)
 
@@ -213,22 +221,26 @@ class TestsJsonLibrary {
         assertFalse(jobject.isArrayStructureHomogenousShallow("testArrayWithMissingProperty"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("testArrayWithMissingProperty"))
 
-        // Mesmas propriedades + Classes Diferentes
-        val ArrayWithDifferingTypes = JsonArray()
-        jobject.addElement("testArrayWithDifferingTypes", ArrayWithDifferingTypes)
+        /**
+         * Tests on JSON Arrays with same properties but differing types.
+         */
+        val arrayWithDifferingTypes = JsonArray()
+        jobject.addElement("testArrayWithDifferingTypes", arrayWithDifferingTypes)
 
         val studentWithDifferentType = JsonObject()
-        ArrayWithDifferingTypes.addElement(studentWithDifferentType)
+        arrayWithDifferingTypes.addElement(studentWithDifferentType)
         studentWithDifferentType.addElement("numero", JsonString("teste"))
         studentWithDifferentType.addElement("nome", JsonString("nome"))
         studentWithDifferentType.addElement("internacional", JsonBoolean(false))
 
-        ArrayWithDifferingTypes.addElement(student1)
+        arrayWithDifferingTypes.addElement(student1)
 
         assertFalse(jobject.isArrayStructureHomogenousShallow("testArrayWithDifferingTypes"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("testArrayWithDifferingTypes"))
 
-        // Propriedades diferentes + Classes Diferentes
+        /**
+         * Tests on JSON Arrays with differing properties and types.
+         */
         val arrayWithMissingPropertiesAndDifferingNames = JsonArray()
         jobject.addElement("arrayWithMissingPropertiesAndDifferingNames", arrayWithMissingPropertiesAndDifferingNames)
 
@@ -243,7 +255,9 @@ class TestsJsonLibrary {
         assertFalse(jobject.isArrayStructureHomogenousShallow("arrayWithMissingPropertiesAndDifferingNames"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("arrayWithMissingPropertiesAndDifferingNames"))
 
-        // Array com objetos dentro dos objetos
+        /**
+         * Tests on JSON Arrays with JSON Objects within JSON Objects.
+         */
         val arrayWithObjectsWithinOfObjects = JsonArray()
         jobject.addElement("arrayWithObjectsInsideOfObjects", arrayWithObjectsWithinOfObjects)
 
@@ -255,7 +269,9 @@ class TestsJsonLibrary {
         assertTrue(jobject.isArrayStructureHomogenousShallow("arrayWithObjectsInsideOfObjects"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("arrayWithObjectsInsideOfObjects"))
 
-        // Array com objetos de estruturas diferentes dentro dos objetos
+        /**
+         * Tests on JSON Arrays with differing structures JSON Objects within JSON Objects.
+         */
         val arrayWithDifferingObjectsWithinObjects = JsonArray()
         jobject.addElement("arrayWithObjectsDifferingObjectsWithinObjects", arrayWithDifferingObjectsWithinObjects)
 

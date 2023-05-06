@@ -2,10 +2,27 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.*
 
+
 interface Visitor {
+
+    /**
+     * Visits JSON Leaf elements.
+     */
     fun visit(jsonLeaf: JsonLeaf<*>) {}
+
+    /**
+     * Visits JSON Composite elements.
+     */
     fun visit(jsonComposite: JsonComposite) {}
+
+    /**
+     * Visits JSON Elements with knowledge of its associated property.
+     */
     fun visit(name: String, jsonElement: JsonElement): Boolean = true
+
+    /**
+     * Called at the end of the visit. TODO
+     */
     fun endVisit(jsonComposite: JsonComposite) {}
 }
 
@@ -19,9 +36,15 @@ abstract class JsonComposite : JsonElement {
 }
 
 abstract class JsonLeaf<T>(val value: T) : JsonElement {
+    /**
+     * Calls the visit method for the same JSON Leaf
+     */
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
     }
+    /**
+     * Calls the visit method for the same JSON Leaf, and its property.
+     */
     override fun accept(visitor: Visitor, name: String): Boolean {
         return visitor.visit(name, this)
     }
@@ -37,17 +60,26 @@ class JsonObject() : JsonComposite() {
         elements[name] = value
     }
 
+    /**
+     * Calls the visit method for the same JSON Leaf and calls the method visitChildren for the same visitor.
+     */
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
         visitChildren(visitor)
     }
 
+    /**
+     * Calls the visitChildren method for the same visitor.
+     */
     override fun accept(visitor: Visitor, name: String): Boolean {
         if(visitor.visit(name, this))
             return visitChildren(visitor)
         return false
     }
 
+    /**
+     * TODO
+     */
     private fun visitChildren(visitor: Visitor): Boolean {
         elements.forEach {
             if(!it.value.accept(visitor, it.key)) return false
@@ -71,11 +103,17 @@ class JsonArray() : JsonComposite() {
         elements.add(value)
     }
 
+    /**
+     * Calls the visit method for the same JSON Composite and calls the method visitChildren for the same visitor.
+     */
     override fun accept(visitor: Visitor) {
         visitor.visit(this)
         visitChildren(visitor)
     }
 
+    /**
+     * TODO
+     */
     override fun accept(visitor: Visitor, name: String): Boolean {
         if(visitor.visit(name, this)){
             visitChildren(visitor)
@@ -84,6 +122,9 @@ class JsonArray() : JsonComposite() {
         return false
     }
 
+    /**
+     * Calls the accept method for each JSON Element associated with the JSON Array.
+     */
     private fun visitChildren(visitor: Visitor) {
         elements.forEach {
             it.accept(visitor)
@@ -105,18 +146,27 @@ class JsonString(value: String) : JsonLeaf<String>(value) {
     }
 }
 
+/**
+ * Class representing JSON Number values as JSON Elements
+ */
 class JsonNumber(value: Number) : JsonLeaf<Number>(value) {
     override fun toString(): String {
         return value.toString()
     }
 }
 
+/**
+ * Class representing JSON Boolean values as JSON Elements
+ */
 class JsonBoolean(value: Boolean) : JsonLeaf<Boolean>(value) {
     override fun toString(): String {
         return value.toString()
     }
 }
 
+/**
+ * Class representing JSON Null values as JSON Elements
+ */
 class JsonNull : JsonLeaf<Any?>(null) {
     override fun toString(): String {
         return "null"
