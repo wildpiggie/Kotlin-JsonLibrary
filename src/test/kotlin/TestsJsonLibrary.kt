@@ -84,8 +84,31 @@ class TestsJsonLibrary {
         //Adicionar mais testes sobre a estrutura e talvez com a estrutura inteira do exemplo para comparar.
         assertEquals("{\n\t\"numero\" : 26503,\n\t\"nome\" : \"André Santos\",\n\t\"internacional\" : false\n}", student3.getStructure())
         assertEquals("[\n\t\"E1\",\n\t1\n]", simpleArray.getStructure())
+        assertEquals("{\n\t\"uc\" : \"PA\",\n\t\"ects\" : 6.0,\n\t\"data-exame\" : null,\n\t\"inscritos\" : [\n\t" +
+                "\t{\n\t\t\t\"numero\" : 101101,\n\t\t\t\"nome\" : \"Dave Farley\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 101102,\n\t\t\t\"nome\" : \"Martin Fowler\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 26503,\n\t\t\t\"nome\" : \"André Santos\",\n\t\t\t\"internacional\" : false\n\t\t}" +
+                "\n\t]\n}"
+            , jobject.getStructure())
+
+        jobject.addElement("Extra", student1)
+        assertEquals("{\n\t\"uc\" : \"PA\",\n\t\"ects\" : 6.0,\n\t\"data-exame\" : null,\n\t\"inscritos\" : [\n\t" +
+                "\t{\n\t\t\t\"numero\" : 101101,\n\t\t\t\"nome\" : \"Dave Farley\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 101102,\n\t\t\t\"nome\" : \"Martin Fowler\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 26503,\n\t\t\t\"nome\" : \"André Santos\",\n\t\t\t\"internacional\" : false\n\t\t}" +
+                "\n\t]," +
+                "\n\t\"Extra\" : {\n\t" +
+                "\t\"numero\" : 101101,\n\t\t\"nome\" : \"Dave Farley\",\n\t\t\"internacional\" : true\n\t}\n}"
+            , jobject.getStructure())
+
+        println(jobject.getStructure())
     }
 
+    /**
+     * Tests on the functions that returns the JSON Element value associated with a certain property name.
+     *
+     * Tests on the functions that returns the JSON Object that has the property names listed in the parameter.
+     */
     @Test
     fun testSearch() {
 
@@ -111,6 +134,9 @@ class TestsJsonLibrary {
         assertEquals(students, jobject.getJsonObjectWithProperties(listOf("numero", "numero")))
     }
 
+    /**
+     * Tests on the function that verify if the values associated to a certain property are only from one type.
+     */
     @Test
     fun testPropertyTypeVerification() {
         assertTrue(jobject.isPropertyOfType("numero", JsonNumber::class))
@@ -131,6 +157,9 @@ class TestsJsonLibrary {
         assertFalse(jobject.isPropertyOfType("numero", JsonNumber::class))
     }
 
+    /**
+     * Tests on the function that verify if every JSON Object in a certain array has the same structure.
+     */
     @Test
     fun testArrayStructureVerification() {
 

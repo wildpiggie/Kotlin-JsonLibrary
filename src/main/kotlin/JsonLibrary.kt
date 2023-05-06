@@ -29,6 +29,10 @@ abstract class JsonLeaf<T>(val value: T) : JsonElement {
 
 class JsonObject() : JsonComposite() {
     override val elements = mutableMapOf<String, JsonElement>()
+
+    /**
+     * Associates a JSON Element to a JSON Object.
+     */
     fun addElement(name: String, value: JsonElement) {
         elements[name] = value
     }
@@ -59,6 +63,10 @@ class JsonObject() : JsonComposite() {
 
 class JsonArray() : JsonComposite() {
     override val elements = mutableListOf<JsonElement>()
+
+    /**
+     * Associates a JSON Element to a JSON Array.
+     */
     fun addElement(value: JsonElement) {
         elements.add(value)
     }
@@ -88,6 +96,9 @@ class JsonArray() : JsonComposite() {
     }
 }
 
+/**
+ * Class representing JSON String values as JSON Elements.
+ */
 class JsonString(value: String) : JsonLeaf<String>(value) {
     override fun toString(): String {
         return "\"$value\""
@@ -112,6 +123,9 @@ class JsonNull : JsonLeaf<Any?>(null) {
     }
 }
 
+/**
+ * Returns the values that are associated with the Property propertyName, as a list of JSON Elements.
+ */
 fun JsonObject.getValuesOfProperty(propertyName: String): List<JsonElement> {
     val result = object : Visitor {
         val elementList = mutableListOf<JsonElement>()
@@ -124,6 +138,9 @@ fun JsonObject.getValuesOfProperty(propertyName: String): List<JsonElement> {
     return result.elementList
 }
 
+/**
+ * Returns a list of JSON Objects that have all the properties referenced in properties list.
+ */
 fun JsonObject.getJsonObjectWithProperties(properties: List<String>): List<JsonObject> {
     val result = object : Visitor {
         val elementList = mutableListOf<JsonObject>()
@@ -137,6 +154,9 @@ fun JsonObject.getJsonObjectWithProperties(properties: List<String>): List<JsonO
     return result.elementList
 }
 
+/**
+ * Verifies if the value associated to the propertyName is from certain type.
+ */
 fun JsonObject.isPropertyOfType(propertyName: String, type: KClass<*>) : Boolean {
     val result = object : Visitor {
         var value = true
@@ -152,6 +172,9 @@ fun JsonObject.isPropertyOfType(propertyName: String, type: KClass<*>) : Boolean
     return result.value
 }
 
+/**
+ * Verifies if every JSON Object in the array, arrayName, has the same structure.
+ */
 fun JsonObject.isArrayStructureHomogenousShallow(arrayName: String) : Boolean {
     val result = object : Visitor {
         var value = true
@@ -195,7 +218,11 @@ fun JsonObject.isArrayStructureHomogenousShallow(arrayName: String) : Boolean {
     return result.value
 }
 
-// Possivelmente util ser public
+// Possivelmente util ser public || mudar o comentario talvez
+/**
+ * Verifies if every element in the JSON Element, that, has the same structure.
+ * Auxiliary method for the recursive version.
+ */
 private fun JsonElement.hasSameStructure(that: JsonElement): Boolean {
     if(this::class != that::class )
         return false
@@ -222,6 +249,10 @@ private fun JsonElement.hasSameStructure(that: JsonElement): Boolean {
     }
     return true
 }
+
+/**
+ * Verifies if every JSON Object in the array, arrayName, has the same structure, recursively.
+ */
 fun JsonObject.isArrayStructureHomogenousDeep(arrayName: String): Boolean {
     val result = object : Visitor {
         var value = true
@@ -238,6 +269,9 @@ fun JsonObject.isArrayStructureHomogenousDeep(arrayName: String): Boolean {
     return result.value
 }
 
+/**
+ * Returns the JSON text corresponding to the JSON Element.
+ */
 fun JsonElement.getStructure() : String {
     val result = object : Visitor {
         var structure: String = ""
