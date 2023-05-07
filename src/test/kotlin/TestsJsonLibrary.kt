@@ -43,9 +43,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Used to test if a JSON Object is the same as the one specified in class example.
-     *
-     * @param objectToTest the JSON Object to be compared to the class example.
+     * Used to test if a JSON Object [objectToTest] is the same as the one specified in class example.
      */
     private fun testClassJobjectHierarchy(objectToTest: JsonObject): JsonElement {
         val jsonObjectElements = objectToTest.elements
@@ -71,7 +69,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Tests on the hierarchy of created JSON Objects.
+     * Tests the hierarchy of created JSON Objects including tests using its textual projection.
      */
     @Test
     fun testHierarchy() {
@@ -105,9 +103,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Tests on the functions that returns the JSON Element value associated with a certain property name.
-     *
-     * Tests on the functions that returns the JSON Object that has the property names listed in the parameter.
+     * Tests functions that attempt to search for certain JSON Elements given a property name or list of names.
      */
     @Test
     fun testSearch() {
@@ -135,7 +131,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Tests on the function that verify if the values associated to a certain property are only from one type.
+     * Tests the function that verifies if the values associated to a certain property are of the expected type.
      */
     @Test
     fun testPropertyTypeVerification() {
@@ -158,7 +154,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Tests on the function that verify if every JSON Object in a certain array has the same structure.
+     * Tests the function that verifies if every JSON Object in a certain JSON Array has the same structure.
      */
     @Test
     fun testArrayStructureVerification() {
