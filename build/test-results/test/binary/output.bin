@@ -1,0 +1,27 @@
+{
+	"uc" : "PA",
+	"ects" : 6.0,
+	"data-exame" : null,
+	"inscritos" : [
+		{
+			"numero" : 101101,
+			"nome" : "Dave Farley",
+			"internacional" : true
+		},
+		{
+			"numero" : 101102,
+			"nome" : "Martin Fowler",
+			"internacional" : true
+		},
+		{
+			"numero" : 26503,
+			"nome" : "André Santos",
+			"internacional" : false
+		}
+	],
+	"Extra" : {
+		"numero" : 101101,
+		"nome" : "Dave Farley",
+		"internacional" : true
+	}
+}

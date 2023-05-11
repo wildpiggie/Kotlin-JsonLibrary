@@ -43,9 +43,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Used to test if a JSON Object is the same as the one specified in class example.
-     *
-     * @param objectToTest the JSON Object to be compared to the class example.
+     * Used to test if a JSON Object [objectToTest] is the same as the one specified in class example.
      */
     private fun testClassJobjectHierarchy(objectToTest: JsonObject): JsonElement {
         val jsonObjectElements = objectToTest.elements
@@ -71,7 +69,7 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Tests on the hierarchy of created JSON Objects.
+     * Tests the hierarchy of created JSON Objects including tests using its textual projection.
      */
     @Test
     fun testHierarchy() {
@@ -84,8 +82,29 @@ class TestsJsonLibrary {
         //Adicionar mais testes sobre a estrutura e talvez com a estrutura inteira do exemplo para comparar.
         assertEquals("{\n\t\"numero\" : 26503,\n\t\"nome\" : \"André Santos\",\n\t\"internacional\" : false\n}", student3.getStructure())
         assertEquals("[\n\t\"E1\",\n\t1\n]", simpleArray.getStructure())
+        assertEquals("{\n\t\"uc\" : \"PA\",\n\t\"ects\" : 6.0,\n\t\"data-exame\" : null,\n\t\"inscritos\" : [\n\t" +
+                "\t{\n\t\t\t\"numero\" : 101101,\n\t\t\t\"nome\" : \"Dave Farley\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 101102,\n\t\t\t\"nome\" : \"Martin Fowler\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 26503,\n\t\t\t\"nome\" : \"André Santos\",\n\t\t\t\"internacional\" : false\n\t\t}" +
+                "\n\t]\n}"
+            , jobject.getStructure())
+
+        jobject.addElement("Extra", student1)
+        assertEquals("{\n\t\"uc\" : \"PA\",\n\t\"ects\" : 6.0,\n\t\"data-exame\" : null,\n\t\"inscritos\" : [\n\t" +
+                "\t{\n\t\t\t\"numero\" : 101101,\n\t\t\t\"nome\" : \"Dave Farley\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 101102,\n\t\t\t\"nome\" : \"Martin Fowler\",\n\t\t\t\"internacional\" : true\n\t\t}," +
+                "\n\t\t{\n\t\t\t\"numero\" : 26503,\n\t\t\t\"nome\" : \"André Santos\",\n\t\t\t\"internacional\" : false\n\t\t}" +
+                "\n\t]," +
+                "\n\t\"Extra\" : {\n\t" +
+                "\t\"numero\" : 101101,\n\t\t\"nome\" : \"Dave Farley\",\n\t\t\"internacional\" : true\n\t}\n}"
+            , jobject.getStructure())
+
+        println(jobject.getStructure())
     }
 
+    /**
+     * Tests functions that attempt to search for certain JSON Elements given a property name or list of names.
+     */
     @Test
     fun testSearch() {
 
@@ -111,6 +130,9 @@ class TestsJsonLibrary {
         assertEquals(students, jobject.getJsonObjectWithProperties(listOf("numero", "numero")))
     }
 
+    /**
+     * Tests the function that verifies if the values associated to a certain property are of the expected type.
+     */
     @Test
     fun testPropertyTypeVerification() {
         assertTrue(jobject.isPropertyOfType("numero", JsonNumber::class))
@@ -131,13 +153,18 @@ class TestsJsonLibrary {
         assertFalse(jobject.isPropertyOfType("numero", JsonNumber::class))
     }
 
+    /**
+     * Tests the function that verifies if every JSON Object in a certain JSON Array has the same structure.
+     */
     @Test
     fun testArrayStructureVerification() {
 
         assertTrue(jobject.isArrayStructureHomogenousShallow("inscritos"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("inscritos"))
 
-        // Array com elementos
+        /**
+         * Tests on JSON Arrays with JSON Elements.
+         */
         val nonHomogenousArray = JsonArray()
         jobject.addElement("nonHomogenousArray", nonHomogenousArray)
         nonHomogenousArray.addElement(JsonString("E1"))
@@ -154,7 +181,9 @@ class TestsJsonLibrary {
         assertTrue(jobject.isArrayStructureHomogenousShallow("homogenousArray"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("homogenousArray"))
 
-        // Array com elementos e objetos
+        /**
+         * Tests on JSON Arrays with JSON Elements and JSON Objects
+         */
         val mixedArray = JsonArray()
         jobject.addElement("mixedArray", mixedArray)
         mixedArray.addElement(JsonNumber(1))
@@ -163,14 +192,18 @@ class TestsJsonLibrary {
         assertFalse(jobject.isArrayStructureHomogenousShallow("mixedArray"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("mixedArray"))
 
-        // propriedade nao correspondente a um array
+        /**
+         * Tests on JSON Objects with properties not associated to JSON Arrays.
+         */
         assertTrue(jobject.isArrayStructureHomogenousShallow("uc"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("uc"))
 
         assertTrue(jobject.isArrayStructureHomogenousShallow("naoexiste"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("naoexiste"))
 
-        // Propriedades a menos + Classes Iguais
+        /**
+         * Tests on JSON Arrays with missing properties.
+         */
         val arrayWithMissingProperty = JsonArray()
         jobject.addElement("testArrayWithMissingProperty", arrayWithMissingProperty)
 
@@ -184,22 +217,26 @@ class TestsJsonLibrary {
         assertFalse(jobject.isArrayStructureHomogenousShallow("testArrayWithMissingProperty"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("testArrayWithMissingProperty"))
 
-        // Mesmas propriedades + Classes Diferentes
-        val ArrayWithDifferingTypes = JsonArray()
-        jobject.addElement("testArrayWithDifferingTypes", ArrayWithDifferingTypes)
+        /**
+         * Tests on JSON Arrays with same properties but differing types.
+         */
+        val arrayWithDifferingTypes = JsonArray()
+        jobject.addElement("testArrayWithDifferingTypes", arrayWithDifferingTypes)
 
         val studentWithDifferentType = JsonObject()
-        ArrayWithDifferingTypes.addElement(studentWithDifferentType)
+        arrayWithDifferingTypes.addElement(studentWithDifferentType)
         studentWithDifferentType.addElement("numero", JsonString("teste"))
         studentWithDifferentType.addElement("nome", JsonString("nome"))
         studentWithDifferentType.addElement("internacional", JsonBoolean(false))
 
-        ArrayWithDifferingTypes.addElement(student1)
+        arrayWithDifferingTypes.addElement(student1)
 
         assertFalse(jobject.isArrayStructureHomogenousShallow("testArrayWithDifferingTypes"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("testArrayWithDifferingTypes"))
 
-        // Propriedades diferentes + Classes Diferentes
+        /**
+         * Tests on JSON Arrays with differing properties and types.
+         */
         val arrayWithMissingPropertiesAndDifferingNames = JsonArray()
         jobject.addElement("arrayWithMissingPropertiesAndDifferingNames", arrayWithMissingPropertiesAndDifferingNames)
 
@@ -214,7 +251,9 @@ class TestsJsonLibrary {
         assertFalse(jobject.isArrayStructureHomogenousShallow("arrayWithMissingPropertiesAndDifferingNames"))
         assertFalse(jobject.isArrayStructureHomogenousDeep("arrayWithMissingPropertiesAndDifferingNames"))
 
-        // Array com objetos dentro dos objetos
+        /**
+         * Tests on JSON Arrays with JSON Objects within JSON Objects.
+         */
         val arrayWithObjectsWithinOfObjects = JsonArray()
         jobject.addElement("arrayWithObjectsInsideOfObjects", arrayWithObjectsWithinOfObjects)
 
@@ -226,7 +265,9 @@ class TestsJsonLibrary {
         assertTrue(jobject.isArrayStructureHomogenousShallow("arrayWithObjectsInsideOfObjects"))
         assertTrue(jobject.isArrayStructureHomogenousDeep("arrayWithObjectsInsideOfObjects"))
 
-        // Array com objetos de estruturas diferentes dentro dos objetos
+        /**
+         * Tests on JSON Arrays with differing structures JSON Objects within JSON Objects.
+         */
         val arrayWithDifferingObjectsWithinObjects = JsonArray()
         jobject.addElement("arrayWithObjectsDifferingObjectsWithinObjects", arrayWithDifferingObjectsWithinObjects)
 
