@@ -70,11 +70,11 @@ class JsonObject() : JsonComposite() {
             it.elementAdded(value)
         }
 
-        //Este código é relativo a quando é adicionado algo a um filho,
+        //Este código é relativo aquando é adicionado algo a um filho,
         // não sabemos ainda como queremos reagir. O mesmo aplica-se ao jsonArray
         value.addObserver(object: JsonElementObserver {
             override fun elementAdded(element: JsonElement) {
-                //queremos notificar de forma a indicar que algo foi adicionado a algum nível inferior:
+                //queremos notificar para indicar que algo foi adicionado a algum nível inferior:
                 observers.forEach {
                     it.elementAdded(value)
                 }
@@ -143,7 +143,7 @@ class JsonArray() : JsonComposite() {
             it.elementAdded(value)
         }
 
-        //Este código é relativo a quando é adicionado algo a um filho,
+        //Este código é relativo aquando é adicionado algo a um filho,
         // não sabemos ainda como queremos reagir.
         value.addObserver(object: JsonElementObserver {
             override fun elementAdded(element: JsonElement) {
