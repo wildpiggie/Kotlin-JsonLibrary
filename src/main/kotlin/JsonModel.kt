@@ -24,25 +24,11 @@ interface Visitor {
 interface JsonElement {
     fun accept(visitor: Visitor) {}
     fun accept(visitor: Visitor, name: String): Boolean = true
-
-    //para poder declarar aqui assim como por o addObserver também aqui foi necessário
-    //colocar como objeto público, caso contrário temos que repetir o código nas classes filho.
-    val observers: MutableList<JsonElementObserver>
-
-    fun addObserver(observer: JsonElementObserver) {
-        observers.add(observer)
-    }
 }
 
-abstract class JsonComposite : JsonElement {
-    abstract val elements: Any
-    override val observers: MutableList<JsonElementObserver> = mutableListOf()
-}
+abstract class JsonComposite : JsonElement
 
 abstract class JsonLeaf<T>(val value: T) : JsonElement {
-
-    override val observers: MutableList<JsonElementObserver> = mutableListOf()
-
     /**
      * Calls the visit method for the same JSON Leaf
      */
@@ -59,7 +45,15 @@ abstract class JsonLeaf<T>(val value: T) : JsonElement {
 
 class JsonObject() : JsonComposite() {
 
-    override val elements = mutableMapOf<String, JsonElement>()
+    val elements = mutableMapOf<String, JsonElement>()
+
+    //para poder declarar aqui assim como por o addObserver também aqui foi necessário
+    //colocar como objeto público, caso contrário temos que repetir o código nas classes filho.
+    private val observers: MutableList<JsonObjectObserver> = mutableListOf()
+
+    fun addObserver(observer: JsonObjectObserver) {
+        observers.add(observer)
+    }
 
     /**
      * Associates a JSON Element to this JSON Object.
@@ -67,29 +61,8 @@ class JsonObject() : JsonComposite() {
     fun addElement(name: String, value: JsonElement) {
         elements[name] = value
         observers.forEach {
-            it.elementAdded(value)
+            it.elementAdded(name, value)
         }
-
-        //Este código é relativo a quando é adicionado algo a um filho,
-        // não sabemos ainda como queremos reagir. O mesmo aplica-se ao jsonArray
-        value.addObserver(object: JsonElementObserver {
-            override fun elementAdded(element: JsonElement) {
-                //queremos notificar de forma a indicar que algo foi adicionado a algum nível inferior:
-                observers.forEach {
-                    it.elementAdded(value)
-                }
-
-                //ou é melhor notificar de forma mais genérica:
-                /*
-                observers.forEach {
-                    it.elementUpdate()
-                }
-                 */
-
-                //por enquanto sinto que podemos continuar com o element added, assim como na
-                //aula prática e ver no que dá
-            }
-        })
     }
 
 
@@ -131,7 +104,13 @@ class JsonObject() : JsonComposite() {
 }
 
 class JsonArray() : JsonComposite() {
-    override val elements = mutableListOf<JsonElement>()
+    val elements = mutableListOf<JsonElement>()
+
+    private val observers: MutableList<JsonArrayObserver> = mutableListOf()
+
+    fun addObserver(observer: JsonArrayObserver) {
+        observers.add(observer)
+    }
 
     /**
      * Associates a JSON Element to this JSON Array.
@@ -142,16 +121,6 @@ class JsonArray() : JsonComposite() {
         observers.forEach {
             it.elementAdded(value)
         }
-
-        //Este código é relativo a quando é adicionado algo a um filho,
-        // não sabemos ainda como queremos reagir.
-        value.addObserver(object: JsonElementObserver {
-            override fun elementAdded(element: JsonElement) {
-                observers.forEach {
-                    it.elementAdded(value)
-                }
-            }
-        })
     }
 
     /**
@@ -225,8 +194,18 @@ class JsonNull : JsonLeaf<Any?>(null) {
     }
 }
 
-interface JsonElementObserver {
-    //fun elementModified(old: JsonElement, new: JsonElement)
-    //fun elementDeleted(element: JsonElement)
-    fun elementAdded(element: JsonElement)
+interface JsonObjectObserver {
+    //Talvez adicionar método para alterar o nome associado a um valor?
+    //se não o utilizador tem que apagar um elemento e adicionar novamente com outro nome.
+    //fun elementModified(name: String, newValue: JsonElement)
+    //fun elementDeleted(name: String)
+    fun elementAdded(name: String, value: JsonElement)
+}
+
+interface JsonArrayObserver {
+    //estes métodos a baixo não terão forma de diferenciar elementos no array se tiverem o mesmo valor, a meu ver.
+    //isto pode não ser problema
+    //fun elementModified(oldValue: JsonElement, newValue: JsonElement)
+    //fun elementDeleted(value: JsonElement)
+    fun elementAdded(value: JsonElement)
 }
