@@ -11,10 +11,6 @@ class Editor {
     val frame = JFrame("JSON Object Editor").apply {
 
         val model = JsonObject()
-        model.addElement("uc", JsonString("PA"))
-        model.addElement("ects", JsonNumber(6.0))
-        model.addElement("data-exame", JsonNull())
-
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         layout = GridLayout(0, 2)
         size = Dimension(600, 600)
@@ -33,13 +29,22 @@ class Editor {
         val srcArea = TextView(model)
         right.add(srcArea)
         add(right)
+
+        model.addElement("uc", JsonString("PA"))
+        model.addElement("ects", JsonNumber(6.0))
+        model.addElement("data-exame", JsonNull())
+        val student1 = JsonObject()
+        model.addElement("aluno", student1)
+        student1.addElement("numero", JsonNumber(101101))
+        student1.addElement("nome", JsonString("Dave Farley"))
+        student1.addElement("internacional", JsonBoolean(true))
+
+
     }
 
     fun open() {
         frame.isVisible = true
     }
-
-
 }
 
 

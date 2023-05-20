@@ -1,28 +1,29 @@
+import java.awt.Color
 import java.awt.Component
-import java.awt.event.FocusAdapter
-import java.awt.event.FocusEvent
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
 import javax.swing.*
 
-class JsonEditorView(private val model: JsonElement) : JPanel() {
+class JsonEditorView(model: JsonObject) : JPanel() {
+    // no futuro adicionar a lista de observers e a interface jsoneditorview observer
     init {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
         alignmentX = Component.LEFT_ALIGNMENT
         alignmentY = Component.TOP_ALIGNMENT
 
-        add(createJsonElementWidget("aa", model)) // opçao sem propriedade/nomeS
-
-        // menu
+        /**
         addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
+
+            /** Comandos para criar/apagar elementos **/
+
+
+             * Isto vai para os observers em cada class dos widgets
+             * override fun mouseClicked(e: MouseEvent) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     val menu = JPopupMenu("Message")
                     val add = JButton("add")
                     add.addActionListener {
                         val text = JOptionPane.showInputDialog("text")
                         // necessario dois inputs, nome e valor
-                        add(createJsonElementWidget("aaaa",model))
+                        //add(createJsonElementWidget(text, value))
                         menu.isVisible = false
                         revalidate()
                         repaint()
@@ -41,34 +42,83 @@ class JsonEditorView(private val model: JsonElement) : JPanel() {
                     menu.show(e.component, 100, 100)
                 }
             }
-        })
-    }
 
-    fun createJsonElementWidget(key: String, value: JsonElement): JPanel =
-        JPanel().apply {
+        }) **/
+
+        add(JsonObjectWidget(model))
+
+
+    }
+    inner class JsonLeafWidget(value: JsonLeaf<*>): JsonWidget() {
+        init {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
             alignmentX = Component.LEFT_ALIGNMENT
             alignmentY = Component.TOP_ALIGNMENT
 
-            if (value is JsonComposite) {
-                when(value) {
-                    is JsonObject -> value.elements.forEach {
-                        add(createJsonElementWidget(it.key, it.value))
+            add(JTextField(value.toString()))
+        }
+    }
+    inner class JsonObjectWidget(private val value: JsonObject): JsonWidget() {
+        val widgets = mutableListOf<JsonWidget>()
+        init {
+            border = BorderFactory.createLineBorder(Color.BLACK)
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+
+            value.addObserver(object : JsonObjectObserver {
+                override fun elementAdded(name: String, value: JsonElement) {
+                    val panel = JPanel().apply {
+                        layout = BoxLayout(this, BoxLayout.X_AXIS)
+                        add(JLabel(name))
+                        when(value) {
+                            is JsonLeaf<*> -> {
+                                var widget = JsonLeafWidget(value)
+                                add(widget)
+                                widgets.add(widget)
+                            }
+                            is JsonObject -> {
+                                var widget = JsonObjectWidget(value)
+                                add(widget)
+                                widgets.add(widget)
+                            }
+                        }
+                        revalidate()
+                        repaint()
                     }
-                    //is JsonArray -> value.elements.forEach {}
-                }
-            }
-            add(JLabel(key))
-            val text = JTextField(value.getStructure())
-            println("Criei widget")
-            text.addFocusListener(object : FocusAdapter() {
-                override fun focusLost(e: FocusEvent) {
-                    println("perdeu foco: ${text.text}")
+                    add(panel)
                 }
             })
-            add(text)
+
+            // observer mouse click
         }
 
-    // adicionar uma flag para diferenciar se a property era opcional
+        /** fun addWidgetElement(value: JsonElement) {
+            when(value) {
+                is JsonLeaf<*> -> {
+                    add(JsonLeafWidget(value))
+                }
+                is JsonObject -> add(JsonObjectWidget(value))
+            }
+            revalidate()
+            repaint()
+        }
+        **/
+    }
+
+    /** inner class JsonArrayWidget(name: String, value: JsonArray): JPanel() {
+        /**
+         * No JsonArray os elementos nao tem nomes, como fazer para lidar com isso
+         */
+        fun addWidgetElement(name: String, value: JsonElement) {
+            when(value) {
+                is JsonLeaf<*> -> add(JsonLeafWidget(name, value))
+                is JsonObject -> add(JsonObjectWidget(name, value))
+                is JsonArray -> add(JsonArrayWidget(name, value))
+            }
+        }
+    }
+    **/
+
+    abstract class JsonWidget : JPanel()
+
 }
 
