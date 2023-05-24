@@ -334,4 +334,29 @@ class TestsJsonLibrary {
         assertIs<JsonString>(customJsonElements["numberAsString"])
         assertEquals("\"99\"", (customJsonElements["numberAsString"] as JsonString).toString())
     }
+
+    /**
+     * Tests the model observers, for adding...
+     */
+    @Test
+    fun testObservers() {
+        var objectElementAddedObserved = false
+        jobject.addObserver(object : JsonObjectObserver {
+            override fun elementAdded(name: String, value: JsonElement) {
+                objectElementAddedObserved = true
+            }
+        })
+        jobject.addElement("JsonNull", JsonNull())
+
+        var arrayElementAddedObserved = false
+        studentArray.addObserver(object : JsonArrayObserver {
+            override fun elementAdded(value: JsonElement) {
+                arrayElementAddedObserved = true
+            }
+        })
+        studentArray.addElement(JsonNull())
+
+        assertTrue(objectElementAddedObserved)
+        assertTrue(arrayElementAddedObserved)
+    }
 }
