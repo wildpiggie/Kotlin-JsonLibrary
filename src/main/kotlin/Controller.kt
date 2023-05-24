@@ -6,8 +6,6 @@ import javax.swing.*
 fun main() {
     val model = JsonObject()
     val studentArray = JsonArray()
-    Editor(model).open()
-
     model.addElement("uc", JsonString("PA"))
     model.addElement("ects", JsonNumber(6.0))
     model.addElement("data-exame", JsonNull())
@@ -25,6 +23,10 @@ fun main() {
     student2.addElement("numero", JsonNumber(101102))
     student2.addElement("nome", JsonString("Martin Fowler"))
     student2.addElement("internacional", JsonBoolean(true))
+
+    student1.addElement("A", student2)
+
+    Editor(model).open()
 
     //GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames().forEach { print(it) }
 }

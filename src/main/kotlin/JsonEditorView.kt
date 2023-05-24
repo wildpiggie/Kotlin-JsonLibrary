@@ -8,7 +8,6 @@ import javax.swing.*
 class JsonEditorView(model: JsonObject) : JPanel() {
     private val observers: MutableList<JsonEditorViewObserver> = mutableListOf()
 
-    // no futuro adicionar a lista de observers e a interface jsoneditorview observer
     init {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
         alignmentX = Component.LEFT_ALIGNMENT
@@ -62,9 +61,8 @@ class JsonEditorView(model: JsonObject) : JPanel() {
     inner class JsonObjectWidget(modelObject: JsonObject): JsonWidget() {
         private val widgets = mutableMapOf<String, JsonWidget>()
         init {
-
             modelObject.elements.forEach{
-                addObjectWidgets(it.key, it.value)
+                addElementWidget(it.key, it.value)
             }
 
             border = BorderFactory.createLineBorder(
@@ -73,10 +71,9 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
             modelObject.addObserver(object : JsonObjectObserver {
                 override fun elementAdded(name: String, value: JsonElement) {
-                    addObjectWidgets(name, value)
+                    addElementWidget(name, value)
                 }
             })
-
 
             addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
@@ -112,7 +109,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             })
         }
 
-        fun addObjectWidgets(name: String, value: JsonElement) {
+        private fun addElementWidget(name: String, value: JsonElement) {
             val panel = JPanel().apply {
                 layout = BoxLayout(this, BoxLayout.X_AXIS)
                 alignmentX = Component.LEFT_ALIGNMENT
@@ -148,40 +145,17 @@ class JsonEditorView(model: JsonObject) : JPanel() {
     inner class JsonArrayWidget(modelArray: JsonArray): JsonWidget() {
         val widgets = mutableListOf<JsonWidget>()
         init {
+            modelArray.elements.forEach{
+                addElementWidget(it)
+            }
+
             border = BorderFactory.createLineBorder(
                 Color.BLUE, 2, true)
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
             modelArray.addObserver(object : JsonArrayObserver {
                 override fun elementAdded(value: JsonElement) {
-                    val panel = JPanel().apply {
-                        layout = BoxLayout(this, BoxLayout.X_AXIS)
-                        alignmentX = Component.LEFT_ALIGNMENT
-                        alignmentY = Component.CENTER_ALIGNMENT
-
-                        add(Box.createHorizontalStrut(10))
-                        add(Box.createHorizontalStrut(10))
-
-                        var widget: JsonWidget = JsonLeafWidget(JsonNull())
-                        when(value) {
-                            is JsonLeaf<*> -> {
-                                widget = JsonLeafWidget(value)
-                            }
-                            is JsonObject -> {
-                                widget = JsonObjectWidget(value)
-                            }
-                            is JsonArray -> {
-                                widget = JsonArrayWidget(value)
-                            }
-                        }
-                        add(widget)
-                        widgets.add(widget) // nao vamos saber distinguir caso haja dois elementos com o mesmo valor
-
-                        add(Box.createHorizontalStrut(10))
-                        revalidate()
-                        repaint()
-                    }
-                    add(panel)
+                    addElementWidget(value)
                 }
             })
 
@@ -218,6 +192,37 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 }
             })
+        }
+
+        private fun addElementWidget(value: JsonElement) {
+            val panel = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.X_AXIS)
+                alignmentX = Component.LEFT_ALIGNMENT
+                alignmentY = Component.CENTER_ALIGNMENT
+
+                add(Box.createHorizontalStrut(10))
+                add(Box.createHorizontalStrut(10))
+
+                var widget: JsonWidget = JsonLeafWidget(JsonNull())
+                when(value) {
+                    is JsonLeaf<*> -> {
+                        widget = JsonLeafWidget(value)
+                    }
+                    is JsonObject -> {
+                        widget = JsonObjectWidget(value)
+                    }
+                    is JsonArray -> {
+                        widget = JsonArrayWidget(value)
+                    }
+                }
+                add(widget)
+                widgets.add(widget) // nao vamos saber distinguir caso haja dois elementos com o mesmo valor
+
+                add(Box.createHorizontalStrut(10))
+                revalidate()
+                repaint()
+            }
+            add(panel)
         }
     }
 }
