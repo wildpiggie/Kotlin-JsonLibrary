@@ -54,8 +54,6 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 }
             }
             add(Box.createHorizontalGlue())
-
-             // refresecar atraves do controller
         }
     }
     inner class JsonObjectWidget(modelObject: JsonObject): JsonWidget() {
@@ -72,6 +70,10 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             modelObject.addObserver(object : JsonObjectObserver {
                 override fun elementAdded(name: String, value: JsonElement) {
                     addElementWidget(name, value)
+                }
+
+                override fun elementRemoved(name: String) {
+                    remove(widgets.remove(name))
                 }
             })
 
@@ -156,6 +158,10 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             modelArray.addObserver(object : JsonArrayObserver {
                 override fun elementAdded(value: JsonElement) {
                     addElementWidget(value)
+                }
+
+                override fun elementRemoved(index: Int) {
+                    remove(widgets.removeAt(index))
                 }
             })
 

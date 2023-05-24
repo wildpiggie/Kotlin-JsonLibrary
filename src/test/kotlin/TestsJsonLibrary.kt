@@ -341,22 +341,39 @@ class TestsJsonLibrary {
     @Test
     fun testObservers() {
         var objectElementAddedObserved = false
+        var objectElementRemovedObserved = false
         jobject.addObserver(object : JsonObjectObserver {
+            override fun elementRemoved(name: String) {
+                objectElementRemovedObserved = true
+            }
+
             override fun elementAdded(name: String, value: JsonElement) {
                 objectElementAddedObserved = true
             }
         })
-        jobject.addElement("JsonNull", JsonNull())
 
         var arrayElementAddedObserved = false
+        var arrayElementRemovedObserved = false
         studentArray.addObserver(object : JsonArrayObserver {
+            override fun elementRemoved(index: Int) {
+                arrayElementRemovedObserved = true
+            }
+
             override fun elementAdded(value: JsonElement) {
                 arrayElementAddedObserved = true
             }
         })
+
+        jobject.addElement("JsonNull", JsonNull())
         studentArray.addElement(JsonNull())
 
         assertTrue(objectElementAddedObserved)
         assertTrue(arrayElementAddedObserved)
+
+        jobject.removeElement("JsonNull")
+        studentArray.removeElement(studentArray.elements.lastIndex)
+
+        assertTrue(objectElementRemovedObserved)
+        assertTrue(arrayElementRemovedObserved)
     }
 }

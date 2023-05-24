@@ -65,6 +65,16 @@ class JsonObject() : JsonComposite() {
         }
     }
 
+    /**
+     * Removes a JSON Element from this JSON Object.
+     */
+    fun removeElement(name: String) {
+        elements.remove(name)
+        observers.forEach {
+            it.elementRemoved(name)
+        }
+    }
+
 
     /**
      * Visits self and all children using the [visitChildren] method.
@@ -120,6 +130,17 @@ class JsonArray() : JsonComposite() {
 
         observers.forEach {
             it.elementAdded(value)
+        }
+    }
+
+    /**
+     * Removes a JSON Element from this JSON Array.
+     */
+    fun removeElement(index: Int) {
+        elements.removeAt(index)
+
+        observers.forEach {
+            it.elementRemoved(index)
         }
     }
 
@@ -198,7 +219,7 @@ interface JsonObjectObserver {
     //Talvez adicionar método para alterar o nome associado a um valor?
     //se não o utilizador tem que apagar um elemento e adicionar novamente com outro nome.
     //fun elementModified(name: String, newValue: JsonElement)
-    //fun elementDeleted(name: String)
+    fun elementRemoved(name: String)
     fun elementAdded(name: String, value: JsonElement)
 }
 
@@ -206,6 +227,6 @@ interface JsonArrayObserver {
     //estes métodos a baixo não terão forma de diferenciar elementos no array se tiverem o mesmo valor, a meu ver.
     //isto pode não ser problema
     //fun elementModified(oldValue: JsonElement, newValue: JsonElement)
-    //fun elementDeleted(value: JsonElement)
+    fun elementRemoved(index: Int)
     fun elementAdded(value: JsonElement)
 }
