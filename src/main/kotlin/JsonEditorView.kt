@@ -5,8 +5,6 @@ import javax.swing.*
 
 class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel() {
 
-    val commandStack = mutableListOf<Command>()
-
     // no futuro adicionar a lista de observers e a interface jsoneditorview observer
     init {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -147,31 +145,6 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
     **/
 
     abstract class JsonWidget : JPanel()
-
-    interface Command {
-        fun run()
-        fun undo()
-    }
-
-    class AddToObjectCommand(val model: JsonObject, val name: String, val value: JsonElement): Command {
-        override fun run() {
-            model.addElement(name, value)
-        }
-
-        override fun undo() {
-            //model.remove(name)
-        }
-    }
-
-    class AddToArrayCommand(val model: JsonArray, val value: JsonElement): Command {
-        override fun run() {
-            model.addElement(value)
-        }
-
-        override fun undo() {
-            //model.remove(value)
-        }
-    }
 
 }
 
