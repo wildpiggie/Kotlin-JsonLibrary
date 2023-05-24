@@ -44,7 +44,7 @@ class Editor(private val model: JsonObject) {
         val textView = JsonTextView(model)
         right.add(textView)
 
-        val editorView = JsonEditorView(model, textView)
+        val editorView = JsonEditorView(model)
 
         val left = JPanel()
         left.layout = GridLayout()
@@ -58,12 +58,20 @@ class Editor(private val model: JsonObject) {
         add(right)
 
         editorView.addObserver(object : JsonEditorViewObserver {
-            override fun elementAddedToObject(model0bject: JsonObject, name: String, value: JsonElement) {
-                model0bject.addElement(name, value)
+            override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement) {
+                val cmd = AddToObjectCommand(modelObject, name, value)
+                commandStack.add(cmd)
+                cmd.run()
+
+                textView.refresh()
             }
 
             override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement) {
-                modelArray.addElement(value)
+                val cmd = AddToArrayCommand(modelArray, value)
+                commandStack.add(cmd)
+                cmd.run()
+
+                textView.refresh()
             }
         })
     }
