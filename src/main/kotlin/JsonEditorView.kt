@@ -56,7 +56,7 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
             }
             add(Box.createHorizontalGlue())
 
-            jsonTextView.refresh()
+             // refresecar atraves do controller
         }
     }
     inner class JsonObjectWidget(modelObject: JsonObject): JsonWidget() {
@@ -110,11 +110,12 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
                         val menu = JPopupMenu("Object Button")
                         val add = JButton("add")
                         add.addActionListener {
-                            // val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
+                            //val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
                             val newLeaf = JOptionPane.showInputDialog("text")
                             newLeaf?.let {
                                 observers.forEach {
-                                    it.widgetAdded((JsonString(newLeaf)))
+                                    //it.widgetAdded(this@JsonObjectWidget)
+                                    it.elementAddedToObject(modelObject, "teste", JsonString(newLeaf))
                                 }
                             }
                             menu.isVisible = false
@@ -136,8 +137,9 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
                 }
             })
 
-            jsonTextView.refresh()
+           // jsonTextView.refresh()
         }
+
     }
     inner class JsonArrayWidget(modelArray: JsonArray): JsonWidget() {
         val widgets = mutableListOf<JsonWidget>()
@@ -190,7 +192,8 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
                             val newLeaf = JOptionPane.showInputDialog("text")
                             newLeaf?.let {
                                 observers.forEach {
-                                    it.widgetAdded((JsonString(newLeaf)))
+                                    //it.widgetAdded((JsonString(newLeaf)))
+                                    it.elementAddedToArray(modelArray, JsonString(newLeaf))
                                 }
                             }
                             menu.isVisible = false
@@ -212,21 +215,21 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
                 }
             })
 
-            jsonTextView.refresh()
+            //jsonTextView.refresh()
         }
     }
 
     /**
-     * talvez para facilitar ter butoes que distinguem o tipo de coisa que vamos criar
+     * Talvez para facilitar ter butoes que distinguem o tipo de coisa que vamos criar
      * e.g. quando clicamos num objeto temos a opção de adicionar um objeto, um array, ou uma leaf com propriedade associada
-     * no exemplo do professor o professor clicka num objeto que esta dentro do array mas cria um null no array
-     * e quando escreve "numero: " é considerado logo um objeto
+     * no exemplo do professor o professor clicka num objeto que esta dentro do array, mas cria um null no array
+     * e quando escreve "numero :" é considerado logo um objeto
      * Acho que isso envolve demasiadas verificaçoes e com diferentes butoes seria mais facil IMO
      *
      *
      *
      * Quando adicionamos ao algo via editor, fazemos como o exemplo da aula? Onde vamos ter um observer do editor no controller e quando é notificado que algo foi atualizado ele atualiza o model no controller?
-     * Se sim, como distinguimos onde é que ele esta a adicionar? Neste momento ele assumo sempre que esta so a adicionar uma leaf ao model base
+     * Se sim, como distinguimos onde é que ele esta a adicionar? Agora ele assume sempre que esta so a adicionar uma leaf ao model base
      * 
      * Seria errado atualizar adicionar o widget no observer do mouseclick e depois ter um observador para atualizar o modelo?
      */
@@ -237,8 +240,10 @@ class JsonEditorView(model: JsonObject, val jsonTextView: JsonTextView) : JPanel
 abstract class JsonWidget : JPanel()
 
 interface JsonEditorViewObserver {
-    fun widgetAdded(element: JsonElement) {}
-    fun widgetModified() {}
-    fun widgetRemoved() {}
+    fun elementAddedToObject(model0bject: JsonObject, name: String, value: JsonElement)
+    fun elementAddedToArray(modelArray: JsonArray, value: JsonElement)
+
+    //fun widgetModified() {}
+    //fun widgetRemoved() {}
 }
 

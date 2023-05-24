@@ -42,7 +42,7 @@ class Editor(private val model: JsonObject) {
         val textView = JsonTextView(model)
         right.add(textView)
 
-        var editorView : JsonEditorView = JsonEditorView(model, textView)
+        val editorView = JsonEditorView(model, textView)
 
         val left = JPanel()
         left.layout = GridLayout()
@@ -56,10 +56,13 @@ class Editor(private val model: JsonObject) {
         add(right)
 
         editorView.addObserver(object : JsonEditorViewObserver {
-            override fun widgetAdded(element: JsonElement) {
-                model.addElement("test", element)
+            override fun elementAddedToObject(model0bject: JsonObject, name: String, value: JsonElement) {
+                model0bject.addElement(name, value)
             }
 
+            override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement) {
+                modelArray.addElement(value)
+            }
         })
     }
 
