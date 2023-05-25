@@ -68,8 +68,8 @@ class Editor(private val model: JsonObject) {
                 textView.refresh()
             }
 
-            override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement) {
-                val cmd = AddToArrayCommand(modelArray, value)
+            override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int) {
+                val cmd = AddToArrayCommand(modelArray, value, index)
                 commandStack.add(cmd)
                 cmd.run()
 
@@ -119,13 +119,13 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class AddToArrayCommand(private val model: JsonArray, private val value: JsonElement): Command {
+    class AddToArrayCommand(private val model: JsonArray, private val value: JsonElement, private val index: Int): Command {
         override fun run() {
-            model.addElement(value)
+            model.addElement(value, index)
         }
 
         override fun undo() {
-            //model.remove(value)
+            model.removeElement(index)
         }
     }
 

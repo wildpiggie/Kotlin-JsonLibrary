@@ -134,6 +134,17 @@ class JsonArray() : JsonComposite() {
     }
 
     /**
+     * Associates a JSON Element to this JSON Array at the specified indexx.
+     */
+    fun addElement(value: JsonElement, index: Int) {
+        elements.add(index, value)
+
+        observers.forEach {
+            it.elementAdded(value, index)
+        }
+    }
+
+    /**
      * Removes a JSON Element from this JSON Array.
      */
     fun removeElement(index: Int) {
@@ -229,4 +240,5 @@ interface JsonArrayObserver {
     //fun elementModified(oldValue: JsonElement, newValue: JsonElement)
     fun elementRemoved(index: Int)
     fun elementAdded(value: JsonElement)
+    fun elementAdded(value: JsonElement, index: Int)
 }

@@ -189,34 +189,49 @@ class JsonEditorView(model: JsonObject) : JPanel() {
         }
     }
     inner class JsonArrayWidget(private val modelArray: JsonArray): JsonWidget() {
-        val widgets = mutableListOf<JsonWidget>()
         init {
-            modelArray.elements.forEach{
-                addElementWidget(it)
+            modelArray.elements.forEach {
+                add(ArrayElementWidget(it))
             }
 
-            //border = BorderFactory.createLineBorder(Color.BLUE, 2, true)
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
             modelArray.addObserver(object : JsonArrayObserver {
                 override fun elementAdded(value: JsonElement) {
-                    addElementWidget(value)
+                    add(ArrayElementWidget(value))
+                    updateBorders()
+                }
+
+                override fun elementAdded(value: JsonElement, index: Int) {
+                    add(ArrayElementWidget(value), index)
+                    updateBorders()
                 }
 
                 override fun elementRemoved(index: Int) {
-                    remove(widgets.removeAt(index).parent)
-                    revalidate()
-                    repaint()
+                    remove(this@JsonArrayWidget.getComponent(index))
+                    updateBorders()
                 }
             })
+
+            updateBorders()
         }
 
-        private fun addElementWidget(value: JsonElement) {
-            val panel = JPanel().apply {
+        private fun updateBorders() {
+            this.components.forEach {
+                if(it is ArrayElementWidget){
+                    val borderComponent = BorderFactory.createLineBorder(
+                        if (this.components.indexOf(it) % 2 == 0) Color.LIGHT_GRAY else Color.GRAY, 10
+                    )
+                    it.border = borderComponent
+                }
+            }
+        }
+
+        inner class ArrayElementWidget(value: JsonElement) : JPanel() {
+            init {
                 layout = BoxLayout(this, BoxLayout.X_AXIS)
                 alignmentX = Component.LEFT_ALIGNMENT
                 alignmentY = Component.CENTER_ALIGNMENT
-                val elementIndex = widgets.size
 
                 addMouseListener(object : MouseAdapter() {
                     override fun mouseClicked(e: MouseEvent) {
@@ -250,7 +265,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                             remove.addActionListener {
                                 observers.forEach {
-                                    it.elementRemovedFromArray(modelArray, elementIndex)
+                                    it.elementRemovedFromArray(modelArray, this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget))
                                 }
                                 menu.isVisible = false
                             }
@@ -264,29 +279,25 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 })
 
-                val borderComponent = BorderFactory.createLineBorder(
-                    if (widgets.size %2 == 0) Color.LIGHT_GRAY else Color.GRAY, 10)
-                border = borderComponent
-
                 var widget: JsonWidget = JsonLeafWidget(JsonNull())
-                when(value) {
+                when (value) {
                     is JsonLeaf<*> -> {
                         widget = JsonLeafWidget(value)
                     }
+
                     is JsonObject -> {
                         widget = JsonObjectWidget(value)
                     }
+
                     is JsonArray -> {
                         widget = JsonArrayWidget(value)
                     }
                 }
                 add(widget)
-                widgets.add(widget)
 
                 revalidate()
                 repaint()
             }
-            add(panel)
         }
     }
 }
@@ -294,7 +305,7 @@ abstract class JsonWidget : JPanel()
 
 interface JsonEditorViewObserver {
     fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement)
-    fun elementAddedToArray(modelArray: JsonArray, value: JsonElement)
+    fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int)
 
     fun elementRemovedFromObject(modelObject: JsonObject, name: String)
     fun elementRemovedFromArray(modelArray: JsonArray, index: Int)
