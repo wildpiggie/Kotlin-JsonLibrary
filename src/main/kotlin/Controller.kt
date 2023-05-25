@@ -6,8 +6,6 @@ import javax.swing.*
 fun main() {
     val model = JsonObject()
     val studentArray = JsonArray()
-    Editor(model).open()
-
     model.addElement("uc", JsonString("PA"))
     model.addElement("ects", JsonNumber(6.0))
     model.addElement("data-exame", JsonNull())
@@ -26,6 +24,10 @@ fun main() {
     student2.addElement("nome", JsonString("Martin Fowler"))
     student2.addElement("internacional", JsonBoolean(true))
 
+    student1.addElement("A", student2)
+
+    Editor(model).open()
+
     //GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames().forEach { print(it) }
 }
 
@@ -36,7 +38,7 @@ class Editor(private val model: JsonObject) {
 
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         layout = GridLayout(0, 2)
-        size = Dimension(600, 600)
+        size = Dimension(800, 800)
         //font = Font("MS Consolas", Font.PLAIN, 50) //não funciona
 
         val right = JPanel()
@@ -73,6 +75,28 @@ class Editor(private val model: JsonObject) {
 
                 textView.refresh()
             }
+
+            override fun elementRemovedFromObject(modelObject: JsonObject, name: String) {
+                val removedValue = modelObject.elements[name]
+                if(removedValue != null){
+                    val cmd = RemoveFromObjectCommand(modelObject, name, removedValue)
+                    commandStack.add(cmd)
+                    cmd.run()
+
+                    textView.refresh()
+                }
+            }
+
+            override fun elementRemovedFromArray(modelArray: JsonArray, index: Int) {
+                val removedValue = modelArray.elements.getOrNull(index)
+                if(removedValue != null){
+                    val cmd = RemoveFromArrayCommand(modelArray, index, removedValue)
+                    commandStack.add(cmd)
+                    cmd.run()
+
+                    textView.refresh()
+                }
+            }
         })
     }
 
@@ -85,17 +109,17 @@ class Editor(private val model: JsonObject) {
         fun undo()
     }
 
-    class AddToObjectCommand(val model: JsonObject, val name: String, val value: JsonElement): Command {
+    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement): Command {
         override fun run() {
             model.addElement(name, value)
         }
 
         override fun undo() {
-            //model.remove(name)
+            model.removeElement(name)
         }
     }
 
-    class AddToArrayCommand(val model: JsonArray, val value: JsonElement): Command {
+    class AddToArrayCommand(private val model: JsonArray, private val value: JsonElement): Command {
         override fun run() {
             model.addElement(value)
         }
@@ -103,6 +127,28 @@ class Editor(private val model: JsonObject) {
         override fun undo() {
             //model.remove(value)
         }
+    }
+
+    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement): Command {
+
+        override fun run() {
+            model.removeElement(name)
+        }
+
+        override fun undo() {
+            model.addElement(name, removedValue)
+        }
+    }
+
+    class RemoveFromArrayCommand(private val model: JsonArray, private val index: Int, private val removedvalue: JsonElement): Command {
+        override fun run() {
+            model.removeElement(index)
+        }
+
+        override fun undo() {
+            model.addElement(removedvalue)
+        }
+
     }
 }
 
