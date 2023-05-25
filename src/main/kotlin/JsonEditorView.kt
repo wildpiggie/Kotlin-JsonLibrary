@@ -68,10 +68,14 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             modelObject.addObserver(object : JsonObjectObserver {
                 override fun elementAdded(name: String, value: JsonElement) {
                     addElementWidget(name, value)
+                    revalidate()
+                    repaint()
                 }
 
                 override fun elementRemoved(name: String) {
                     remove(widgets.remove(name)?.parent)
+                    revalidate()
+                    repaint()
                 }
             })
 
@@ -132,7 +136,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                         menu.add(buttonAddObject)
                         menu.add(buttonAddArray)
                         menu.add(buttonAddLeaf)
-                        menu.show(e.component, 100, 100)
+                        menu.show(e.component, 20, 15)
                     }
                 }
             })
@@ -161,7 +165,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                                 menu.isVisible = false
                             }
                             menu.add(removeButton)
-                            menu.show(e.component, 100, 100)
+                            menu.show(e.component, 20, 15)
                         }
                     }
                 })
@@ -182,8 +186,6 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 widgets[name] = widget
 
                 add(Box.createHorizontalStrut(10))
-                revalidate()
-                repaint()
             }
             add(panel)
         }
@@ -200,16 +202,22 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 override fun elementAdded(value: JsonElement) {
                     add(ArrayElementWidget(value))
                     updateBorders()
+                    revalidate()
+                    repaint()
                 }
 
                 override fun elementAdded(value: JsonElement, index: Int) {
                     add(ArrayElementWidget(value), index)
                     updateBorders()
+                    revalidate()
+                    repaint()
                 }
 
                 override fun elementRemoved(index: Int) {
                     remove(this@JsonArrayWidget.getComponent(index))
                     updateBorders()
+                    revalidate()
+                    repaint()
                 }
             })
 
@@ -274,7 +282,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             menu.add(buttonAddArray)
                             menu.add(buttonAddLeaf)
                             menu.add(remove)
-                            menu.show(e.component, 100, 100)
+                            menu.show(e.component, 20, 15)
                         }
                     }
                 })
@@ -294,9 +302,6 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 }
                 add(widget)
-
-                revalidate()
-                repaint()
             }
         }
     }

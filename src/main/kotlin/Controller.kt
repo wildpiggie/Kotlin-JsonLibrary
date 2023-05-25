@@ -1,3 +1,5 @@
+import java.awt.BorderLayout
+import java.awt.Button
 import java.awt.Dimension
 import java.awt.GridLayout
 import javax.swing.*
@@ -32,58 +34,104 @@ fun main() {
 }
 
 class Editor(private val model: JsonObject) {
-    val commandStack = mutableListOf<Command>()
+    private val commandStack = mutableListOf<Command>()
+    private var commandIndex = 0
 
     private val frame = JFrame("JSON Object Editor").apply {
 
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-        layout = GridLayout(0, 2)
         size = Dimension(800, 800)
+
+        layout = BorderLayout()
+
         //font = Font("MS Consolas", Font.PLAIN, 50) //não funciona
 
-        val right = JPanel()
-        right.layout = GridLayout()
-        val textView = JsonTextView(model)
-        right.add(textView)
 
+        val textView = JsonTextView(model)
         val editorView = JsonEditorView(model)
 
-        val left = JPanel()
-        left.layout = GridLayout()
-        val scrollPane = JScrollPane(editorView).apply {
-            horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
-            verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
-        }
-        left.add(scrollPane)
+        val editorAndViewerPanel = object: JPanel() {
+            init {
+                layout = GridLayout(0, 2)
+                val left = JPanel()
+                left.layout = GridLayout()
+                val scrollPane = JScrollPane(editorView).apply {
+                    horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+                    verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+                }
+                left.add(scrollPane)
 
-        add(left)
-        add(right)
+                val right = JPanel()
+                right.layout = GridLayout()
+                right.add(textView)
+
+                add(left)
+                add(right)
+            }
+        }
+
+        add(editorAndViewerPanel, BorderLayout.CENTER)
+
+        val undoButton = Button("undo")
+        val redoButton = Button("redo")
+
+        undoButton.addActionListener {
+            print(commandIndex)
+            commandStack[--commandIndex].undo()
+            if(commandIndex == 0) undoButton.isEnabled = false
+            redoButton.isEnabled = commandIndex < commandStack.size
+
+            textView.refresh()
+        }
+        undoButton.isEnabled = false
+
+        redoButton.addActionListener {
+            commandStack[commandIndex++].run()
+            if(commandIndex == commandStack.size) redoButton.isEnabled = false
+            undoButton.isEnabled = commandIndex > 0
+
+            textView.refresh()
+        }
+        redoButton.isEnabled = false
+
+        val toolbar = JToolBar()
+
+        toolbar.add(undoButton)
+        toolbar.add(redoButton)
+        add(toolbar, BorderLayout.PAGE_START)
+
+        fun runCommandAndUpdateStack(cmd: Command){
+            if(commandIndex < commandStack.size){
+                commandStack.subList(commandIndex, commandStack.size).clear()
+            }
+            commandIndex = commandStack.size
+            commandStack.add(commandIndex++, cmd)
+            undoButton.isEnabled = true
+            redoButton.isEnabled = false
+            cmd.run()
+
+            textView.refresh()
+
+            revalidate()
+            repaint()
+        }
 
         editorView.addObserver(object : JsonEditorViewObserver {
             override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement) {
                 val cmd = AddToObjectCommand(modelObject, name, value)
-                commandStack.add(cmd)
-                cmd.run()
-
-                textView.refresh()
+                runCommandAndUpdateStack(cmd)
             }
 
             override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int) {
                 val cmd = AddToArrayCommand(modelArray, value, index)
-                commandStack.add(cmd)
-                cmd.run()
-
-                textView.refresh()
+                runCommandAndUpdateStack(cmd)
             }
 
             override fun elementRemovedFromObject(modelObject: JsonObject, name: String) {
                 val removedValue = modelObject.elements[name]
                 if(removedValue != null){
                     val cmd = RemoveFromObjectCommand(modelObject, name, removedValue)
-                    commandStack.add(cmd)
-                    cmd.run()
-
-                    textView.refresh()
+                    runCommandAndUpdateStack(cmd)
                 }
             }
 
@@ -91,10 +139,7 @@ class Editor(private val model: JsonObject) {
                 val removedValue = modelArray.elements.getOrNull(index)
                 if(removedValue != null){
                     val cmd = RemoveFromArrayCommand(modelArray, index, removedValue)
-                    commandStack.add(cmd)
-                    cmd.run()
-
-                    textView.refresh()
+                    runCommandAndUpdateStack(cmd)
                 }
             }
         })
@@ -146,7 +191,7 @@ class Editor(private val model: JsonObject) {
         }
 
         override fun undo() {
-            model.addElement(removedvalue)
+            model.addElement(removedvalue, index)
         }
 
     }

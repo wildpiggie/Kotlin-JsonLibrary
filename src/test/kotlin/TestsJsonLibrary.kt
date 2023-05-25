@@ -354,6 +354,7 @@ class TestsJsonLibrary {
 
         var arrayElementAddedObserved = false
         var arrayElementRemovedObserved = false
+        var arrayElementAddedAtIndexObserved = false
         studentArray.addObserver(object : JsonArrayObserver {
             override fun elementRemoved(index: Int) {
                 arrayElementRemovedObserved = true
@@ -362,13 +363,19 @@ class TestsJsonLibrary {
             override fun elementAdded(value: JsonElement) {
                 arrayElementAddedObserved = true
             }
+
+            override fun elementAdded(value: JsonElement, index: Int) {
+                arrayElementAddedAtIndexObserved = true
+            }
         })
 
         jobject.addElement("JsonNull", JsonNull())
         studentArray.addElement(JsonNull())
+        studentArray.addElement(JsonNull(),0)
 
         assertTrue(objectElementAddedObserved)
         assertTrue(arrayElementAddedObserved)
+        assertTrue(arrayElementAddedAtIndexObserved)
 
         jobject.removeElement("JsonNull")
         studentArray.removeElement(studentArray.elements.lastIndex)
