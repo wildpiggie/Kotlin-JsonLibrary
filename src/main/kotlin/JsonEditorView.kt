@@ -72,8 +72,6 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                 override fun elementRemoved(name: String) {
                     remove(widgets.remove(name)?.parent)
-                    revalidate()
-                    repaint()
                 }
             })
 
@@ -81,18 +79,40 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 override fun mouseClicked(e: MouseEvent) {
                     if (SwingUtilities.isRightMouseButton(e)) {
                         val menu = JPopupMenu("Object Button")
-                        val add = JButton("add to object")
-                        add.addActionListener {
-                            //val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
-                            val newLeaf = JOptionPane.showInputDialog("text")
-                            newLeaf?.let {
+                        val buttonAddObject = JButton("Add Object")
+                        val buttonAddArray = JButton("Add Array")
+                        val buttonAddLeaf = JButton("Add Leaf")
+
+                        buttonAddObject.addActionListener {
+                            val objectName = JOptionPane.showInputDialog("Object name")
+                            objectName?.let {
                                 observers.forEach {
-                                    //it.widgetAdded(this@JsonObjectWidget)
-                                    it.elementAddedToObject(modelObject, "teste", JsonString(newLeaf))
+                                    it.elementAddedToObject(modelObject, objectName, JsonObject())
                                 }
                             }
                             menu.isVisible = false
                         }
+
+                        buttonAddArray.addActionListener {
+                            val arrayName = JOptionPane.showInputDialog("Array name")
+                            arrayName?.let {
+                                observers.forEach {
+                                    it.elementAddedToObject(modelObject, arrayName, JsonArray())
+                                }
+                            }
+                            menu.isVisible = false
+                        }
+
+                        buttonAddLeaf.addActionListener {
+                            val leafName = JOptionPane.showInputDialog("Leaf name")
+                            leafName?.let {
+                                observers.forEach {
+                                    it.elementAddedToObject(modelObject, leafName, JsonNull())
+                                }
+                            }
+                            menu.isVisible = false
+                        }
+
                         //De momento este botão causa problemas porque ao apagar um elemento do array enquanto estás a percorre-lo da porcaria
                         /*
                         val del = JButton("delete all")
@@ -109,7 +129,9 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                         menu.add(del)
                          */
 
-                        menu.add(add)
+                        menu.add(buttonAddObject)
+                        menu.add(buttonAddArray)
+                        menu.add(buttonAddLeaf)
                         menu.show(e.component, 100, 100)
                     }
                 }
@@ -200,29 +222,42 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     override fun mouseClicked(e: MouseEvent) {
                         if (SwingUtilities.isRightMouseButton(e)) {
                             val menu = JPopupMenu("Array Button")
-                            val add = JButton("add to array")
-                            add.addActionListener {
-                                println("array")
-                                // val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
-                                val newLeaf = JOptionPane.showInputDialog("text")
-                                newLeaf?.let {
-                                    observers.forEach {
-                                        //it.widgetAdded((JsonString(newLeaf)))
-                                        it.elementAddedToArray(modelArray, JsonString(newLeaf))
-                                    }
+                            val buttonAddObject = JButton("Add Object")
+                            val buttonAddArray = JButton("Add Array")
+                            val buttonAddLeaf = JButton("Add Leaf")
+                            val remove = JButton("remove from array")
+
+                            buttonAddObject.addActionListener {
+                                observers.forEach {
+                                    it.elementAddedToArray(modelArray, JsonObject())
                                 }
                                 menu.isVisible = false
                             }
-                            val remove = JButton("remove from array")
+
+                            buttonAddArray.addActionListener {
+                                observers.forEach {
+                                    it.elementAddedToArray(modelArray, JsonArray())
+                                }
+                                menu.isVisible = false
+                            }
+
+                            buttonAddLeaf.addActionListener {
+                                observers.forEach {
+                                    it.elementAddedToArray(modelArray, JsonNull())
+                                }
+                                menu.isVisible = false
+                            }
+
                             remove.addActionListener {
                                 observers.forEach {
                                     it.elementRemovedFromArray(modelArray, elementIndex)
                                 }
                                 menu.isVisible = false
                             }
-                            //delete all igual ao objeto
 
-                            menu.add(add)
+                            menu.add(buttonAddObject)
+                            menu.add(buttonAddArray)
+                            menu.add(buttonAddLeaf)
                             menu.add(remove)
                             menu.show(e.component, 100, 100)
                         }
