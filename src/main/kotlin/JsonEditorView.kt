@@ -93,21 +93,6 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             }
                             menu.isVisible = false
                         }
-                        //De momento este botão causa problemas porque ao apagar um elemento do array enquanto estás a percorre-lo da porcaria
-                        /*
-                        val del = JButton("delete all")
-                        del.addActionListener {
-                            widgets.forEach{widget ->
-                                observers.forEach{
-                                    it.elementRemovedFromObject(modelObject, widget.key)
-                                }
-                            }
-                            menu.isVisible = false
-                            revalidate()
-                            repaint()
-                        }
-                        menu.add(del)
-                         */
 
                         menu.add(add)
                         menu.show(e.component, 100, 100)
@@ -167,34 +152,49 @@ class JsonEditorView(model: JsonObject) : JPanel() {
         }
     }
     inner class JsonArrayWidget(private val modelArray: JsonArray): JsonWidget() {
-        val widgets = mutableListOf<JsonWidget>()
         init {
-            modelArray.elements.forEach{
-                addElementWidget(it)
+            modelArray.elements.forEach {
+                add(ArrayElementWidget(it))
             }
 
-            //border = BorderFactory.createLineBorder(Color.BLUE, 2, true)
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
             modelArray.addObserver(object : JsonArrayObserver {
                 override fun elementAdded(value: JsonElement) {
-                    addElementWidget(value)
+                    add(ArrayElementWidget(value))
+                    updateBorders()
+                }
+
+                override fun elementAdded(value: JsonElement, index: Int) {
+                    add(ArrayElementWidget(value), index)
+                    updateBorders()
                 }
 
                 override fun elementRemoved(index: Int) {
-                    remove(widgets.removeAt(index).parent)
-                    revalidate()
-                    repaint()
+                    remove(this@JsonArrayWidget.getComponent(index))
+                    updateBorders()
                 }
             })
+
+            updateBorders()
         }
 
-        private fun addElementWidget(value: JsonElement) {
-            val panel = JPanel().apply {
+        private fun updateBorders() {
+            this.components.forEach {
+                if(it is ArrayElementWidget){
+                    val borderComponent = BorderFactory.createLineBorder(
+                        if (this.components.indexOf(it) % 2 == 0) Color.LIGHT_GRAY else Color.GRAY, 10
+                    )
+                    it.border = borderComponent
+                }
+            }
+        }
+
+        inner class ArrayElementWidget(value: JsonElement) : JPanel() {
+            init {
                 layout = BoxLayout(this, BoxLayout.X_AXIS)
                 alignmentX = Component.LEFT_ALIGNMENT
                 alignmentY = Component.CENTER_ALIGNMENT
-                val elementIndex = widgets.size
 
                 addMouseListener(object : MouseAdapter() {
                     override fun mouseClicked(e: MouseEvent) {
@@ -202,13 +202,10 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             val menu = JPopupMenu("Array Button")
                             val add = JButton("add to array")
                             add.addActionListener {
-                                println("array")
-                                // val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
                                 val newLeaf = JOptionPane.showInputDialog("text")
                                 newLeaf?.let {
                                     observers.forEach {
-                                        //it.widgetAdded((JsonString(newLeaf)))
-                                        it.elementAddedToArray(modelArray, JsonString(newLeaf))
+                                        it.elementAddedToArray(modelArray, JsonString(newLeaf), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
                                     }
                                 }
                                 menu.isVisible = false
@@ -216,11 +213,10 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             val remove = JButton("remove from array")
                             remove.addActionListener {
                                 observers.forEach {
-                                    it.elementRemovedFromArray(modelArray, elementIndex)
+                                    it.elementRemovedFromArray(modelArray, this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget))
                                 }
                                 menu.isVisible = false
                             }
-                            //delete all igual ao objeto
 
                             menu.add(add)
                             menu.add(remove)
@@ -229,29 +225,25 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 })
 
-                val borderComponent = BorderFactory.createLineBorder(
-                    if (widgets.size %2 == 0) Color.LIGHT_GRAY else Color.GRAY, 10)
-                border = borderComponent
-
                 var widget: JsonWidget = JsonLeafWidget(JsonNull())
-                when(value) {
+                when (value) {
                     is JsonLeaf<*> -> {
                         widget = JsonLeafWidget(value)
                     }
+
                     is JsonObject -> {
                         widget = JsonObjectWidget(value)
                     }
+
                     is JsonArray -> {
                         widget = JsonArrayWidget(value)
                     }
                 }
                 add(widget)
-                widgets.add(widget)
 
                 revalidate()
                 repaint()
             }
-            add(panel)
         }
     }
 }
@@ -259,7 +251,7 @@ abstract class JsonWidget : JPanel()
 
 interface JsonEditorViewObserver {
     fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement)
-    fun elementAddedToArray(modelArray: JsonArray, value: JsonElement)
+    fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int)
 
     fun elementRemovedFromObject(modelObject: JsonObject, name: String)
     fun elementRemovedFromArray(modelArray: JsonArray, index: Int)
