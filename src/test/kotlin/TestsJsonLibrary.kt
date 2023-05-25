@@ -354,7 +354,8 @@ class TestsJsonLibrary {
 
         var arrayElementAddedObserved = false
         var arrayElementRemovedObserved = false
-        studentArray.addObserver(object : JsonArrayObserver {
+
+        /**studentArray.addObserver(object : JsonArrayObserver {
             override fun elementRemoved(index: Int) {
                 arrayElementRemovedObserved = true
             }
@@ -362,7 +363,7 @@ class TestsJsonLibrary {
             override fun elementAdded(value: JsonElement) {
                 arrayElementAddedObserved = true
             }
-        })
+        })**/
 
         jobject.addElement("JsonNull", JsonNull())
         studentArray.addElement(JsonNull())

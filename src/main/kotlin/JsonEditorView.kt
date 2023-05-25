@@ -1,6 +1,8 @@
 import java.awt.Color
 import java.awt.Component
 import java.awt.Dimension
+import java.awt.event.FocusAdapter
+import java.awt.event.FocusEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
@@ -26,7 +28,6 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             alignmentX = Component.RIGHT_ALIGNMENT
             alignmentY = Component.CENTER_ALIGNMENT
             when (value) {
-
                 is JsonBoolean -> {
                     val checkBox = JCheckBox()
                     checkBox.isSelected = value.value
@@ -42,6 +43,14 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     val textField = JTextField(7)
                     textField.maximumSize = Dimension(textField.maximumSize.width, textField.preferredSize.height)
                     textField.text = value.value
+                    textField.addFocusListener(object : FocusAdapter() {
+                        override fun focusLost(e: FocusEvent) {
+                            observers.forEach {
+                                // avisar o controlar
+                            }
+                            //println("perdeu foco: ${textField.text}")
+                        }
+                    })
                     add(textField)
                 }
                 else -> {
@@ -52,6 +61,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 }
             }
             add(Box.createHorizontalGlue())
+
         }
     }
     inner class JsonObjectWidget(private val modelObject: JsonObject): JsonWidget() {
@@ -68,6 +78,10 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             modelObject.addObserver(object : JsonObjectObserver {
                 override fun elementAdded(name: String, value: JsonElement) {
                     addElementWidget(name, value)
+                }
+
+                override fun elementModified(name: String, newValue: JsonElement) {
+                    modifyElementWidget(name, newValue)
                 }
 
                 override fun elementRemoved(name: String) {
@@ -138,6 +152,12 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             })
         }
 
+        private fun modifyElementWidget(name: String, value: JsonElement) {
+            // usar indices para isto
+            remove(widgets.remove(name)?.parent)
+            addElementWidget(name, value)
+        }
+
         private fun addElementWidget(name: String, value: JsonElement) {
             val panel = JPanel().apply {
                 layout = BoxLayout(this, BoxLayout.X_AXIS)
@@ -170,6 +190,15 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 when(value) {
                     is JsonLeaf<*> -> {
                         widget = JsonLeafWidget(value)
+                        widget.addMouseListener(object : MouseAdapter() {
+                            override fun mouseClicked(e: MouseEvent) {
+                                if (SwingUtilities.isLeftMouseButton(e)) {
+                                    observers.forEach {
+                                        it.elementModifiedFromObject(name, JsonString(""), modelObject)
+                                    }
+                                }
+                            }
+                        })
                     }
                     is JsonObject -> {
                         widget = JsonObjectWidget(value)
@@ -204,6 +233,12 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                 override fun elementAdded(value: JsonElement, index: Int) {
                     add(ArrayElementWidget(value), index)
+                    updateBorders()
+                }
+
+                override fun elementModified(index: Int, newValue: JsonElement) {
+                    remove(this@JsonArrayWidget.getComponent(index))
+                    add(ArrayElementWidget(newValue), index)
                     updateBorders()
                 }
 
@@ -283,6 +318,15 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 when (value) {
                     is JsonLeaf<*> -> {
                         widget = JsonLeafWidget(value)
+                        widget.addMouseListener(object : MouseAdapter() {
+                            override fun mouseClicked(e: MouseEvent) {
+                                if (SwingUtilities.isLeftMouseButton(e)) {
+                                    observers.forEach {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonString(""), modelArray)
+                                    }
+                                }
+                            }
+                        })
                     }
 
                     is JsonObject -> {
@@ -310,6 +354,7 @@ interface JsonEditorViewObserver {
     fun elementRemovedFromObject(modelObject: JsonObject, name: String)
     fun elementRemovedFromArray(modelArray: JsonArray, index: Int)
 
-    //fun widgetModified() {}
+    fun elementModifiedFromObject(name: String, newValue: JsonLeaf<*>, parent: JsonObject) {}
+    fun elementModifiedFromArray(index: Int, newValue: JsonLeaf<*>, parent: JsonArray)
 }
 

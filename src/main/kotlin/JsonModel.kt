@@ -75,6 +75,16 @@ class JsonObject() : JsonComposite() {
         }
     }
 
+    /**
+     * Modifies the value of JSON Element from this JSON Object.
+     */
+    fun modifyElement(name: String, newValue: JsonElement) {
+        elements[name] = newValue
+        observers.forEach {
+            it.elementModified(name, newValue)
+        }
+    }
+
 
     /**
      * Visits self and all children using the [visitChildren] method.
@@ -134,7 +144,7 @@ class JsonArray() : JsonComposite() {
     }
 
     /**
-     * Associates a JSON Element to this JSON Array at the specified indexx.
+     * Associates a JSON Element to this JSON Array at the specified index.
      */
     fun addElement(value: JsonElement, index: Int) {
         elements.add(index, value)
@@ -152,6 +162,16 @@ class JsonArray() : JsonComposite() {
 
         observers.forEach {
             it.elementRemoved(index)
+        }
+    }
+
+    /**
+     * Modifies the value of JSON Element from this JSON Array.
+     */
+    fun modifyElement(index: Int, newValue: JsonElement) {
+        elements[index] = newValue
+        observers.forEach {
+            it.elementModified(index, newValue)
         }
     }
 
@@ -232,6 +252,7 @@ interface JsonObjectObserver {
     //fun elementModified(name: String, newValue: JsonElement)
     fun elementRemoved(name: String)
     fun elementAdded(name: String, value: JsonElement)
+    fun elementModified(name: String, newValue: JsonElement)
 }
 
 interface JsonArrayObserver {
@@ -241,4 +262,5 @@ interface JsonArrayObserver {
     fun elementRemoved(index: Int)
     fun elementAdded(value: JsonElement)
     fun elementAdded(value: JsonElement, index: Int)
+    fun elementModified(index: Int, newValue: JsonElement)
 }

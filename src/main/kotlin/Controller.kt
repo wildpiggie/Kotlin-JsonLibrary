@@ -97,6 +97,17 @@ class Editor(private val model: JsonObject) {
                     textView.refresh()
                 }
             }
+
+            override fun elementModifiedFromObject(name: String, newValue: JsonLeaf<*>, parent: JsonObject) {
+                parent.modifyElement(name, newValue)
+                textView.refresh()
+            }
+
+
+            override fun elementModifiedFromArray(index: Int, newValue: JsonLeaf<*>, parent: JsonArray) {
+                parent.modifyElement(index, newValue)
+                textView.refresh()
+            }
         })
     }
 
