@@ -77,25 +77,50 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 }
             })
 
-
             addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
                     if (SwingUtilities.isRightMouseButton(e)) {
                         val menu = JPopupMenu("Object Button")
-                        val add = JButton("add")
-                        add.addActionListener {
-                            //val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
-                            val newLeaf = JOptionPane.showInputDialog("text")
-                            newLeaf?.let {
+                        val buttonAddObject = JButton("Add Object")
+                        val buttonAddArray = JButton("Add Array")
+                        val buttonAddLeaf = JButton("Add Leaf")
+
+                        buttonAddObject.addActionListener {
+                            val objectName = JOptionPane.showInputDialog("Object name")
+                            objectName?.let {
                                 observers.forEach {
-                                    //it.widgetAdded(this@JsonObjectWidget)
-                                    it.elementAddedToObject(modelObject, "teste", JsonString(newLeaf))
+                                    it.elementAddedToObject(modelObject, objectName, JsonObject())
                                 }
                             }
                             menu.isVisible = false
                             revalidate()
                             repaint()
                         }
+
+                        buttonAddArray.addActionListener {
+                            val arrayName = JOptionPane.showInputDialog("Array name")
+                            arrayName?.let {
+                                observers.forEach {
+                                    it.elementAddedToObject(modelObject, arrayName, JsonArray())
+                                }
+                            }
+                            menu.isVisible = false
+                            revalidate()
+                            repaint()
+                        }
+
+                        buttonAddLeaf.addActionListener {
+                            val leafName = JOptionPane.showInputDialog("Leaf name")
+                            leafName?.let {
+                                observers.forEach {
+                                    it.elementAddedToObject(modelObject, leafName, JsonNull())
+                                }
+                            }
+                            menu.isVisible = false
+                            revalidate()
+                            repaint()
+                        }
+
                         val del = JButton("delete all")
                         del.addActionListener {
                             println("del no objeto")
@@ -104,7 +129,9 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             revalidate()
                             repaint()
                         }
-                        menu.add(add)
+                        menu.add(buttonAddObject)
+                        menu.add(buttonAddArray)
+                        menu.add(buttonAddLeaf)
                         menu.add(del)
                         menu.show(e.component, 100, 100)
                     }
@@ -175,7 +202,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             }
                         }
                         add(widget)
-                        widgets.add(widget) // nao vamos saber distinguir caso haja dois elementos com o mesmo valor
+                        widgets.add(widget)
 
                         add(Box.createHorizontalStrut(10))
                         revalidate()
@@ -189,22 +216,41 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 override fun mouseClicked(e: MouseEvent) {
                     if (SwingUtilities.isRightMouseButton(e)) {
                         val menu = JPopupMenu("Array Button")
-                        val add = JButton("add")
-                        add.addActionListener {
-                            println("array")
-                            // val newPair = dualPrompt("new values", "first", "second", pair.first.toString(), pair.second.toString())
-                            val newLeaf = JOptionPane.showInputDialog("text")
-                            newLeaf?.let {
-                                observers.forEach {
-                                    //it.widgetAdded((JsonString(newLeaf)))
-                                    it.elementAddedToArray(modelArray, JsonString(newLeaf))
-                                }
+                        val buttonAddObject = JButton("Add Object")
+                        val buttonAddArray = JButton("Add Array")
+                        val buttonAddLeaf = JButton("Add Leaf")
+
+                        buttonAddObject.addActionListener {
+                            observers.forEach {
+                                it.elementAddedToArray(modelArray, JsonObject())
                             }
                             menu.isVisible = false
                             revalidate()
                             repaint()
                         }
+
+                        buttonAddArray.addActionListener {
+                            observers.forEach {
+                                it.elementAddedToArray(modelArray, JsonArray())
+                            }
+                            menu.isVisible = false
+                            revalidate()
+                            repaint()
+                        }
+
+                        buttonAddLeaf.addActionListener {
+                            observers.forEach {
+                                it.elementAddedToArray(modelArray, JsonNull())
+                            }
+                            menu.isVisible = false
+                            revalidate()
+                            repaint()
+                        }
+
+
+
                         val del = JButton("delete all")
+
                         del.addActionListener {
                             println("del no array")
                             //components.forEach {remove(it) }
@@ -212,7 +258,10 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                             revalidate()
                             repaint()
                         }
-                        menu.add(add)
+
+                        menu.add(buttonAddObject)
+                        menu.add(buttonAddArray)
+                        menu.add(buttonAddLeaf)
                         menu.add(del)
                         menu.show(e.component, 100, 100)
                     }
