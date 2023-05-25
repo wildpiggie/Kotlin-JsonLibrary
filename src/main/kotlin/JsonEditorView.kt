@@ -244,21 +244,21 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                             buttonAddObject.addActionListener {
                                 observers.forEach {
-                                    it.elementAddedToArray(modelArray, JsonObject())
+                                    it.elementAddedToArray(modelArray, JsonObject(), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
                                 }
                                 menu.isVisible = false
                             }
 
                             buttonAddArray.addActionListener {
                                 observers.forEach {
-                                    it.elementAddedToArray(modelArray, JsonArray())
+                                    it.elementAddedToArray(modelArray, JsonArray(), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
                                 }
                                 menu.isVisible = false
                             }
 
                             buttonAddLeaf.addActionListener {
                                 observers.forEach {
-                                    it.elementAddedToArray(modelArray, JsonNull())
+                                    it.elementAddedToArray(modelArray, JsonNull(), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
                                 }
                                 menu.isVisible = false
                             }
