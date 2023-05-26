@@ -76,7 +76,6 @@ class Editor(private val model: JsonObject) {
         val redoButton = Button("redo")
 
         undoButton.addActionListener {
-            print(commandIndex)
             commandStack[--commandIndex].undo()
             if(commandIndex == 0) undoButton.isEnabled = false
             redoButton.isEnabled = commandIndex < commandStack.size

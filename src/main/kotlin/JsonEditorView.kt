@@ -62,7 +62,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             }
 
             border = BorderFactory.createLineBorder(
-                Color.BLACK, 2)
+                Color.BLACK, 5)
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
             modelObject.addObserver(object : JsonObjectObserver {
@@ -136,7 +136,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                         menu.add(buttonAddObject)
                         menu.add(buttonAddArray)
                         menu.add(buttonAddLeaf)
-                        menu.show(e.component, 20, 15)
+                        menu.show(e.component, e.x, e.y)
                     }
                 }
             })
@@ -165,7 +165,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                                 menu.isVisible = false
                             }
                             menu.add(removeButton)
-                            menu.show(e.component, 20, 15)
+                            menu.show(e.component, e.x, e.y)
                         }
                     }
                 })
@@ -197,6 +197,13 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             }
 
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            border = BorderFactory.createLineBorder(Color.DARK_GRAY, 5)
+
+            addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    onMouseClicked(e)
+                }
+            })
 
             modelArray.addObserver(object : JsonArrayObserver {
                 override fun elementAdded(value: JsonElement) {
@@ -226,12 +233,64 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
         private fun updateBorders() {
             this.components.forEach {
-                if(it is ArrayElementWidget){
+                if (it is ArrayElementWidget) {
                     val borderComponent = BorderFactory.createLineBorder(
-                        if (this.components.indexOf(it) % 2 == 0) Color.LIGHT_GRAY else Color.GRAY, 10
+                        if (this.components.indexOf(it) % 2 == 0) Color(220,220,220) else Color(190,190,190), 10
                     )
                     it.border = borderComponent
                 }
+            }
+        }
+
+        private fun onMouseClicked(e: MouseEvent, widget: ArrayElementWidget? = null){
+            var index = 0
+
+            if(widget != null)
+                index = this@JsonArrayWidget.components.indexOf(widget) + 1
+
+            if (SwingUtilities.isRightMouseButton(e)) {
+                val menu = JPopupMenu("Array Button")
+                val buttonAddObject = JButton("Add Object")
+                val buttonAddArray = JButton("Add Array")
+                val buttonAddLeaf = JButton("Add Leaf")
+
+                buttonAddObject.addActionListener {
+                    observers.forEach {
+                        it.elementAddedToArray(modelArray, JsonObject(), index)
+                    }
+                    menu.isVisible = false
+                }
+
+                buttonAddArray.addActionListener {
+                    observers.forEach {
+                        it.elementAddedToArray(modelArray, JsonArray(), index)
+                    }
+                    menu.isVisible = false
+                }
+
+                buttonAddLeaf.addActionListener {
+                    observers.forEach {
+                        it.elementAddedToArray(modelArray, JsonNull(), index)
+                    }
+                    menu.isVisible = false
+                }
+
+                menu.add(buttonAddObject)
+                menu.add(buttonAddArray)
+                menu.add(buttonAddLeaf)
+
+                if(widget!=null){
+                    val remove = JButton("remove from array")
+                    remove.addActionListener {
+                        observers.forEach {
+                            it.elementRemovedFromArray(modelArray, index - 1)
+                        }
+                        menu.isVisible = false
+                    }
+                    menu.add(remove)
+                }
+
+                menu.show(e.component, e.x, e.y)
             }
         }
 
@@ -243,47 +302,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                 addMouseListener(object : MouseAdapter() {
                     override fun mouseClicked(e: MouseEvent) {
-                        if (SwingUtilities.isRightMouseButton(e)) {
-                            val menu = JPopupMenu("Array Button")
-                            val buttonAddObject = JButton("Add Object")
-                            val buttonAddArray = JButton("Add Array")
-                            val buttonAddLeaf = JButton("Add Leaf")
-                            val remove = JButton("remove from array")
-
-                            buttonAddObject.addActionListener {
-                                observers.forEach {
-                                    it.elementAddedToArray(modelArray, JsonObject(), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
-                                }
-                                menu.isVisible = false
-                            }
-
-                            buttonAddArray.addActionListener {
-                                observers.forEach {
-                                    it.elementAddedToArray(modelArray, JsonArray(), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
-                                }
-                                menu.isVisible = false
-                            }
-
-                            buttonAddLeaf.addActionListener {
-                                observers.forEach {
-                                    it.elementAddedToArray(modelArray, JsonNull(), this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget) + 1)
-                                }
-                                menu.isVisible = false
-                            }
-
-                            remove.addActionListener {
-                                observers.forEach {
-                                    it.elementRemovedFromArray(modelArray, this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget))
-                                }
-                                menu.isVisible = false
-                            }
-
-                            menu.add(buttonAddObject)
-                            menu.add(buttonAddArray)
-                            menu.add(buttonAddLeaf)
-                            menu.add(remove)
-                            menu.show(e.component, 20, 15)
-                        }
+                        onMouseClicked(e, this@ArrayElementWidget)
                     }
                 })
 
