@@ -61,8 +61,8 @@ class Editor(private val model: JsonObject) {
         add(right)
 
         editorView.addObserver(object : JsonEditorViewObserver {
-            override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement) {
-                val cmd = AddToObjectCommand(modelObject, name, value)
+            override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement, index: Int) {
+                val cmd = AddToObjectCommand(modelObject, name, value, index)
                 commandStack.add(cmd)
                 cmd.run()
 
@@ -77,10 +77,10 @@ class Editor(private val model: JsonObject) {
                 textView.refresh()
             }
 
-            override fun elementRemovedFromObject(modelObject: JsonObject, name: String) {
+            override fun elementRemovedFromObject(modelObject: JsonObject, name: String, index: Int) {
                 val removedValue = modelObject.elements[name]
                 if(removedValue != null){
-                    val cmd = RemoveFromObjectCommand(modelObject, name, removedValue)
+                    val cmd = RemoveFromObjectCommand(modelObject, name, removedValue, index)
                     commandStack.add(cmd)
                     cmd.run()
 
@@ -99,8 +99,8 @@ class Editor(private val model: JsonObject) {
                 }
             }
 
-            override fun elementModifiedFromObject(name: String, newValue: JsonLeaf<*>, parent: JsonObject) {
-                parent.modifyElement(name, newValue)
+            override fun elementModifiedFromObject(name: String, newValue: JsonLeaf<*>, parent: JsonObject, index: Int) {
+                parent.modifyElement(name, newValue, index)
                 textView.refresh()
             }
 
@@ -121,13 +121,13 @@ class Editor(private val model: JsonObject) {
         fun undo()
     }
 
-    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement): Command {
+    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement, private val index: Int): Command {
         override fun run() {
-            model.addElement(name, value)
+            model.addElement(name, value, index)
         }
 
         override fun undo() {
-            model.removeElement(name)
+            model.removeElement(name, index)
         }
     }
 
@@ -141,10 +141,10 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement): Command {
+    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement, private val index: Int): Command {
 
         override fun run() {
-            model.removeElement(name)
+            model.removeElement(name, index)
         }
 
         override fun undo() {
