@@ -247,18 +247,12 @@ class JsonNull : JsonLeaf<Any?>(null) {
 }
 
 interface JsonObjectObserver {
-    //Talvez adicionar método para alterar o nome associado a um valor?
-    //se não o utilizador tem que apagar um elemento e adicionar novamente com outro nome.
-    //fun elementModified(name: String, newValue: JsonElement)
     fun elementRemoved(name: String)
     fun elementAdded(name: String, value: JsonElement)
     fun elementModified(name: String, newValue: JsonElement)
 }
 
 interface JsonArrayObserver {
-    //estes métodos a baixo não terão forma de diferenciar elementos no array se tiverem o mesmo valor, a meu ver.
-    //isto pode não ser problema
-    //fun elementModified(oldValue: JsonElement, newValue: JsonElement)
     fun elementRemoved(index: Int)
     fun elementAdded(value: JsonElement)
     fun elementAdded(value: JsonElement, index: Int)

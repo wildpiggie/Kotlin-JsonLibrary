@@ -23,6 +23,8 @@ class JsonEditorView(model: JsonObject) : JPanel() {
     }
 
     inner class JsonLeafWidget(value: JsonLeaf<*>): JsonWidget() {
+        var textField = JTextField(7)
+
         init {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
             alignmentX = Component.RIGHT_ALIGNMENT
@@ -40,21 +42,13 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     add(JLabel("null"))
                 }
                 is JsonString -> {
-                    val textField = JTextField(7)
+                    textField = JTextField(7)
                     textField.maximumSize = Dimension(textField.maximumSize.width, textField.preferredSize.height)
                     textField.text = value.value
-                    textField.addFocusListener(object : FocusAdapter() {
-                        override fun focusLost(e: FocusEvent) {
-                            observers.forEach {
-                                // avisar o controlar
-                            }
-                            //println("perdeu foco: ${textField.text}")
-                        }
-                    })
                     add(textField)
                 }
                 else -> {
-                    val textField = JTextField(7)
+                    textField = JTextField(7)
                     textField.maximumSize = Dimension(textField.maximumSize.width, textField.preferredSize.height)
                     textField.text = value.toString()
                     add(textField)
@@ -78,6 +72,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             modelObject.addObserver(object : JsonObjectObserver {
                 override fun elementAdded(name: String, value: JsonElement) {
                     addElementWidget(name, value)
+                    //add(ObjectElementWidget(name, value))
                 }
 
                 override fun elementModified(name: String, newValue: JsonElement) {
@@ -150,6 +145,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 }
             })
+
         }
 
         private fun modifyElementWidget(name: String, value: JsonElement) {
@@ -327,6 +323,15 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                                 }
                             }
                         })
+                        widget.textField.addFocusListener(object : FocusAdapter() {
+                            override fun focusLost(e: FocusEvent) {
+                                observers.forEach {
+                                    println()
+                                    it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonString((widget as JsonLeafWidget).textField.text), modelArray )
+                                }
+                                //println("perdeu foco: ${textField.text}")
+                            }
+                        })
                     }
 
                     is JsonObject -> {
@@ -338,9 +343,9 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 }
                 add(widget)
-
                 revalidate()
                 repaint()
+
             }
         }
     }

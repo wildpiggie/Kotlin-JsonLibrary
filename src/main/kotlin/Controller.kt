@@ -6,6 +6,7 @@ import javax.swing.*
 fun main() {
     val model = JsonObject()
     val studentArray = JsonArray()
+
     model.addElement("uc", JsonString("PA"))
     model.addElement("ects", JsonNumber(6.0))
     model.addElement("data-exame", JsonNull())
