@@ -68,10 +68,20 @@ class JsonObject() : JsonComposite() {
     /**
      * Removes a JSON Element from this JSON Object.
      */
-    fun removeElement(name: String) {
+    fun removeElement(name: String, index: Int) {
         elements.remove(name)
         observers.forEach {
-            it.elementRemoved(name)
+            it.elementRemoved(name, index)
+        }
+    }
+
+    /**
+     * Modifies the value of JSON Element from this JSON Object.
+     */
+    fun modifyElement(name: String, newValue: JsonElement, index: Int) {
+        elements[name] = newValue
+        observers.forEach {
+            it.elementModified(name, newValue, index)
         }
     }
 
@@ -134,7 +144,7 @@ class JsonArray() : JsonComposite() {
     }
 
     /**
-     * Associates a JSON Element to this JSON Array at the specified indexx.
+     * Associates a JSON Element to this JSON Array at the specified index.
      */
     fun addElement(value: JsonElement, index: Int) {
         elements.add(index, value)
@@ -152,6 +162,16 @@ class JsonArray() : JsonComposite() {
 
         observers.forEach {
             it.elementRemoved(index)
+        }
+    }
+
+    /**
+     * Modifies the value of JSON Element from this JSON Array.
+     */
+    fun modifyElement(index: Int, newValue: JsonElement) {
+        elements[index] = newValue
+        observers.forEach {
+            it.elementModified(index, newValue)
         }
     }
 
@@ -227,18 +247,15 @@ class JsonNull : JsonLeaf<Any?>(null) {
 }
 
 interface JsonObjectObserver {
-    //Talvez adicionar método para alterar o nome associado a um valor?
-    //se não o utilizador tem que apagar um elemento e adicionar novamente com outro nome.
-    //fun elementModified(name: String, newValue: JsonElement)
-    fun elementRemoved(name: String)
-    fun elementAdded(name: String, value: JsonElement)
+    //fun elementRemoved(name: String) {}
+    fun elementRemoved(name: String, index: Int)
+    fun elementAdded(name: String, value: JsonElement) {}
+    fun elementModified(name: String, newValue: JsonElement, index: Int)
 }
 
 interface JsonArrayObserver {
-    //estes métodos a baixo não terão forma de diferenciar elementos no array se tiverem o mesmo valor, a meu ver.
-    //isto pode não ser problema
-    //fun elementModified(oldValue: JsonElement, newValue: JsonElement)
     fun elementRemoved(index: Int)
     fun elementAdded(value: JsonElement)
     fun elementAdded(value: JsonElement, index: Int)
+    fun elementModified(index: Int, newValue: JsonElement)
 }

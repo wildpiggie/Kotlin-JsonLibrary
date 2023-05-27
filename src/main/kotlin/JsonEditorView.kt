@@ -1,6 +1,8 @@
 import java.awt.Color
 import java.awt.Component
 import java.awt.Dimension
+import java.awt.event.FocusAdapter
+import java.awt.event.FocusEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
@@ -21,175 +23,282 @@ class JsonEditorView(model: JsonObject) : JPanel() {
     }
 
     inner class JsonLeafWidget(value: JsonLeaf<*>): JsonWidget() {
+        var textField = JTextField()
+        var checkBox = JCheckBox()
+
+
         init {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
             alignmentX = Component.RIGHT_ALIGNMENT
             alignmentY = Component.CENTER_ALIGNMENT
             when (value) {
-
                 is JsonBoolean -> {
-                    val checkBox = JCheckBox()
+                    checkBox = JCheckBox()
                     checkBox.isSelected = value.value
                     add(checkBox)
                 }
-                //se preferirmos pode ser um textfield vazio
-                //mas para isso temos que verificar no observer se estiver vazio para dizer que é null
-                // e não string
                 is JsonNull -> {
                     add(JLabel("null"))
                 }
                 is JsonString -> {
-                    val textField = JTextField(7)
+                    textField = JTextField(7)
                     textField.maximumSize = Dimension(textField.maximumSize.width, textField.preferredSize.height)
                     textField.text = value.value
                     add(textField)
                 }
                 else -> {
-                    val textField = JTextField(7)
+                    textField = JTextField(7)
                     textField.maximumSize = Dimension(textField.maximumSize.width, textField.preferredSize.height)
                     textField.text = value.toString()
                     add(textField)
                 }
             }
             add(Box.createHorizontalGlue())
+
         }
     }
-    inner class JsonObjectWidget(private val modelObject: JsonObject): JsonWidget() {
-        private val widgets = mutableMapOf<String, JsonWidget>()
+
+    inner class JsonObjectWidget(private val modelObject: JsonObject) : JsonWidget() {
         init {
             modelObject.elements.forEach{
-                addElementWidget(it.key, it.value)
+                add(ObjectElementWidget(it.key, it.value))
             }
 
-            border = BorderFactory.createLineBorder(
-                Color.BLACK, 5)
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            border = BorderFactory.createLineBorder(Color.BLACK, 5)
 
             modelObject.addObserver(object : JsonObjectObserver {
                 override fun elementAdded(name: String, value: JsonElement) {
-                    addElementWidget(name, value)
+                    add(ObjectElementWidget(name, value))
                     revalidate()
                     repaint()
                 }
 
-                override fun elementRemoved(name: String) {
-                    remove(widgets.remove(name)?.parent)
+                override fun elementModified(name: String, newValue: JsonElement, index: Int) {
+                    remove(this@JsonObjectWidget.getComponent(index))
+                    add(ObjectElementWidget(name, newValue), index)
                     revalidate()
                     repaint()
                 }
-            })
 
-            addMouseListener(object : MouseAdapter() {
-                override fun mouseClicked(e: MouseEvent) {
-                    if (SwingUtilities.isRightMouseButton(e)) {
-                        val menu = JPopupMenu("Object Button")
-                        val buttonAddObject = JButton("Add Object")
-                        val buttonAddArray = JButton("Add Array")
-                        val buttonAddLeaf = JButton("Add Leaf")
-
-                        buttonAddObject.addActionListener {
-                            val objectName = JOptionPane.showInputDialog("Object name")
-                            objectName?.let {
-                                observers.forEach {
-                                    it.elementAddedToObject(modelObject, objectName, JsonObject())
-                                }
-                            }
-                            menu.isVisible = false
-                        }
-
-                        buttonAddArray.addActionListener {
-                            val arrayName = JOptionPane.showInputDialog("Array name")
-                            arrayName?.let {
-                                observers.forEach {
-                                    it.elementAddedToObject(modelObject, arrayName, JsonArray())
-                                }
-                            }
-                            menu.isVisible = false
-                        }
-
-                        buttonAddLeaf.addActionListener {
-                            val leafName = JOptionPane.showInputDialog("Leaf name")
-                            leafName?.let {
-                                observers.forEach {
-                                    it.elementAddedToObject(modelObject, leafName, JsonNull())
-                                }
-                            }
-                            menu.isVisible = false
-                        }
-
-                        //De momento este botão causa problemas porque ao apagar um elemento do array enquanto estás a percorre-lo da porcaria
-                        /*
-                        val del = JButton("delete all")
-                        del.addActionListener {
-                            widgets.forEach{widget ->
-                                observers.forEach{
-                                    it.elementRemovedFromObject(modelObject, widget.key)
-                                }
-                            }
-                            menu.isVisible = false
-                            revalidate()
-                            repaint()
-                        }
-                        menu.add(del)
-                         */
-
-                        menu.add(buttonAddObject)
-                        menu.add(buttonAddArray)
-                        menu.add(buttonAddLeaf)
-                        menu.show(e.component, e.x, e.y)
-                    }
+                override fun elementRemoved(name: String, index: Int) {
+                    remove(this@JsonObjectWidget.getComponent(index))
+                    revalidate()
+                    repaint()
                 }
             })
         }
 
-        private fun addElementWidget(name: String, value: JsonElement) {
-            val panel = JPanel().apply {
+        // temos de fazer um update border tambem para dar fixe as borders do objeto? -> ver o que o samuel fez na ultima versao
+
+        inner class ObjectElementWidget(name: String, value: JsonElement) : JPanel() {
+            init {
                 layout = BoxLayout(this, BoxLayout.X_AXIS)
                 alignmentX = Component.LEFT_ALIGNMENT
                 alignmentY = Component.CENTER_ALIGNMENT
 
-                add(Box.createHorizontalStrut(10))
-                val label = JLabel(name)
-                add(label)
-                add(Box.createHorizontalStrut(10))
-
-                label.addMouseListener(object : MouseAdapter() {
+                addMouseListener(object : MouseAdapter() {
                     override fun mouseClicked(e: MouseEvent) {
                         if (SwingUtilities.isRightMouseButton(e)) {
-                            val menu = JPopupMenu("Element")
-                            val removeButton = JButton("remove element")
-                            removeButton.addActionListener {
-                                observers.forEach {
-                                    it.elementRemovedFromObject(modelObject, name)
+                            val menu = JPopupMenu("Object Button")
+                            val buttonAddObject = JButton("Add Object")
+                            val buttonAddArray = JButton("Add Array")
+                            val buttonAddLeaf = JButton("Add Leaf")
+
+                            buttonAddObject.addActionListener {
+                                val objectName = JOptionPane.showInputDialog("Object name")
+                                if(objectName.isNotEmpty()) {
+                                    objectName.let {
+                                        observers.forEach {
+                                            it.elementAddedToObject(modelObject, objectName, JsonObject(), this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget) + 1)
+                                        }
+                                    }
                                 }
                                 menu.isVisible = false
                             }
-                            menu.add(removeButton)
+
+                            buttonAddArray.addActionListener {
+                                val arrayName = JOptionPane.showInputDialog("Array name")
+                                if(arrayName.isNotEmpty()) {
+                                    arrayName.let {
+                                        observers.forEach {
+                                            it.elementAddedToObject(modelObject, arrayName, JsonArray(), this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget) + 1)
+                                        }
+                                    }
+                                    menu.isVisible = false
+                                }
+                            }
+
+                            buttonAddLeaf.addActionListener {
+                                val leafName = JOptionPane.showInputDialog("Leaf name")
+                                if(leafName.isNotEmpty()) {
+                                    leafName.let {
+                                        observers.forEach {
+                                            it.elementAddedToObject(modelObject, leafName, JsonNull(), this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget) + 1)
+                                        }
+                                    }
+                                    menu.isVisible = false
+                                }
+                            }
+
+                            menu.add(buttonAddObject)
+                            menu.add(buttonAddArray)
+                            menu.add(buttonAddLeaf)
                             menu.show(e.component, e.x, e.y)
                         }
                     }
                 })
 
-                var widget: JsonWidget = JsonLeafWidget(JsonNull())
-                when(value) {
-                    is JsonLeaf<*> -> {
-                        widget = JsonLeafWidget(value)
-                    }
-                    is JsonObject -> {
-                        widget = JsonObjectWidget(value)
-                    }
-                    is JsonArray -> {
-                        widget = JsonArrayWidget(value)
-                    }
-                }
-                add(widget)
-                widgets[name] = widget
+                val panel = JPanel().apply {
+                    layout = BoxLayout(this, BoxLayout.X_AXIS)
+                    alignmentX = Component.LEFT_ALIGNMENT
+                    alignmentY = Component.CENTER_ALIGNMENT
 
-                add(Box.createHorizontalStrut(10))
+                    add(Box.createHorizontalStrut(10))
+                    val label = JLabel(name)
+                    add(label)
+                    add(Box.createHorizontalStrut(10))
+
+                    label.addMouseListener(object : MouseAdapter() {
+                        override fun mouseClicked(e: MouseEvent) {
+                            if (SwingUtilities.isRightMouseButton(e)) {
+                                val menu = JPopupMenu("Element")
+                                val removeButton = JButton("Remove Element")
+                                removeButton.addActionListener {
+                                    observers.forEach {
+                                        it.elementRemovedFromObject(modelObject, name, this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget))
+                                    }
+                                    menu.isVisible = false
+                                }
+                                menu.add(removeButton)
+                                menu.show(e.component, e.x, e.y)
+                            }
+                        }
+                    })
+
+                    var widget: JsonWidget = JsonLeafWidget(JsonNull())
+                    when(value) {
+                        is JsonLeaf<*> -> {
+                            widget = JsonLeafWidget(value)
+                            widget.addMouseListener(object : MouseAdapter() {
+                                override fun mouseClicked(e: MouseEvent) {
+                                    if (SwingUtilities.isLeftMouseButton(e)) {
+                                        observers.forEach {
+                                            if (value is JsonNull) it.elementModifiedFromObject(
+                                                name,
+                                                JsonString(""),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        }
+                                    }
+                                }
+                            })
+
+                            widget.textField.addFocusListener(object : FocusAdapter() {
+                                override fun focusLost(e: FocusEvent) {
+                                    println("Focus Lost function foi chamada")
+                                    observers.forEach {
+                                        //val numberRegex = "-?[0-9]+(\\.[0-9]+)?".toRegex()
+                                        if ((widget as JsonLeafWidget).textField.text.toIntOrNull() != null) {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonNumber((widget as JsonLeafWidget).textField.text.toInt()),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else if ((widget as JsonLeafWidget).textField.text.toDoubleOrNull() != null) {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonNumber((widget as JsonLeafWidget).textField.text.toDouble()),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else if ((widget as JsonLeafWidget).textField.text == "true") {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonBoolean(true),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else if ((widget as JsonLeafWidget).textField.text == "false") {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonBoolean(false),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else if ((widget as JsonLeafWidget).textField.text.isEmpty()) {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonNull(),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else if ((widget as JsonLeafWidget).textField.text is String) {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonString((widget as JsonLeafWidget).textField.text),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonString((widget as JsonLeafWidget).textField.text),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        }
+
+                                    }
+                                }
+                            })
+
+                            widget.checkBox.addFocusListener(object : FocusAdapter() {
+                                override fun focusLost(e: FocusEvent?) {
+                                    observers.forEach {
+                                        if ((widget as JsonLeafWidget).checkBox.isSelected) {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonBoolean(true),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        } else if (!((widget as JsonLeafWidget).checkBox.isSelected)) {
+                                            it.elementModifiedFromObject(
+                                                name,
+                                                JsonBoolean(false),
+                                                modelObject,
+                                                this@JsonObjectWidget.components.indexOf(this@ObjectElementWidget)
+                                            )
+                                        }
+                                    }
+                                }
+                            })
+                        }
+
+                        is JsonObject -> {
+                            widget = JsonObjectWidget(value)
+                        }
+                        is JsonArray -> {
+                            widget = JsonArrayWidget(value)
+                        }
+                    }
+                    add(widget)
+
+                    add(Box.createHorizontalStrut(10))
+                    revalidate()
+                    repaint()
+                }
+
+                add(panel)
+
             }
-            add(panel)
         }
     }
+
+
     inner class JsonArrayWidget(private val modelArray: JsonArray): JsonWidget() {
         init {
             modelArray.elements.forEach {
@@ -215,6 +324,14 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                 override fun elementAdded(value: JsonElement, index: Int) {
                     add(ArrayElementWidget(value), index)
+                    updateBorders()
+                    revalidate()
+                    repaint()
+                }
+
+                override fun elementModified(index: Int, newValue: JsonElement) {
+                    remove(this@JsonArrayWidget.getComponent(index))
+                    add(ArrayElementWidget(newValue), index)
                     updateBorders()
                     revalidate()
                     repaint()
@@ -310,6 +427,50 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                 when (value) {
                     is JsonLeaf<*> -> {
                         widget = JsonLeafWidget(value)
+
+                        widget.addMouseListener(object : MouseAdapter() {
+                            override fun mouseClicked(e: MouseEvent) {
+                                if (SwingUtilities.isLeftMouseButton(e)) {
+                                    observers.forEach {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonString(""), modelArray)
+                                    }
+                                }
+                            }
+                        })
+
+                        widget.textField.addFocusListener(object : FocusAdapter() {
+                            override fun focusLost(e: FocusEvent) {
+                                observers.forEach {
+                                    if((widget as JsonLeafWidget).textField.text.toIntOrNull() != null) {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonNumber((widget as JsonLeafWidget).textField.text.toInt()), modelArray)
+                                    }
+                                    else if((widget as JsonLeafWidget).textField.text.toDoubleOrNull() != null) {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonNumber((widget as JsonLeafWidget).textField.text.toDouble()), modelArray)
+                                    }
+                                    else if( (widget as JsonLeafWidget).textField.text == "true") {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonBoolean(true), modelArray)
+                                    }
+                                    else if( (widget as JsonLeafWidget).textField.text == "false") {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonBoolean(false), modelArray)
+                                    }
+                                    else if((widget as JsonLeafWidget).textField.text.isEmpty()) {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonNull(), modelArray)
+                                    }
+                                    else if((widget as JsonLeafWidget).textField.text is String) {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonString((widget as JsonLeafWidget).textField.text), modelArray)
+                                    }
+                                    else if((widget as JsonLeafWidget).checkBox.isSelected) {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonBoolean(true), modelArray)
+                                    }
+                                    else if(!((widget as JsonLeafWidget).checkBox.isSelected)) {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonBoolean(false), modelArray)
+                                    }
+                                    else {
+                                        it.elementModifiedFromArray(this@JsonArrayWidget.components.indexOf(this@ArrayElementWidget), JsonString((widget as JsonLeafWidget).textField.text), modelArray)
+                                    }
+                                }
+                            }
+                        })
                     }
 
                     is JsonObject -> {
@@ -321,6 +482,9 @@ class JsonEditorView(model: JsonObject) : JPanel() {
                     }
                 }
                 add(widget)
+                revalidate()
+                repaint()
+
             }
         }
     }
@@ -328,12 +492,13 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 abstract class JsonWidget : JPanel()
 
 interface JsonEditorViewObserver {
-    fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement)
+    fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement, index: Int)
     fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int)
 
-    fun elementRemovedFromObject(modelObject: JsonObject, name: String)
+    fun elementRemovedFromObject(modelObject: JsonObject, name: String, index: Int)
     fun elementRemovedFromArray(modelArray: JsonArray, index: Int)
 
-    //fun widgetModified() {}
+    fun elementModifiedFromObject(name: String, newValue: JsonLeaf<*>, parent: JsonObject, index: Int) {}
+    fun elementModifiedFromArray(index: Int, newValue: JsonLeaf<*>, parent: JsonArray)
 }
 
