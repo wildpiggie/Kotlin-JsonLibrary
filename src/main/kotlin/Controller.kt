@@ -8,7 +8,7 @@ fun main() {
     val studentArray = JsonArray()
 
     model.addElement("uc", JsonString("PA"))
-    model.addElement("ects", JsonNumber(6.0))
+    model.addElement("ects", JsonNumber(6))
     model.addElement("data-exame", JsonNull())
 
     model.addElement("inscritos", studentArray)
@@ -62,11 +62,12 @@ class Editor(private val model: JsonObject) {
 
         editorView.addObserver(object : JsonEditorViewObserver {
             override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement, index: Int) {
-                val cmd = AddToObjectCommand(modelObject, name, value, index)
-                commandStack.add(cmd)
-                cmd.run()
-
-                textView.refresh()
+                if(!modelObject.elements.containsKey(name)) {
+                    val cmd = AddToObjectCommand(modelObject, name, value, index)
+                    commandStack.add(cmd)
+                    cmd.run()
+                    textView.refresh()
+                }
             }
 
             override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int) {
@@ -123,7 +124,7 @@ class Editor(private val model: JsonObject) {
 
     class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement, private val index: Int): Command {
         override fun run() {
-            model.addElement(name, value, index)
+            model.addElement(name, value)
         }
 
         override fun undo() {

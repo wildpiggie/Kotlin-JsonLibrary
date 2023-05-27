@@ -66,16 +66,6 @@ class JsonObject() : JsonComposite() {
     }
 
     /**
-     * Associates a JSON Element to this JSON Object at a specific index.
-     */
-    fun addElement(name: String, value: JsonElement, index: Int) {
-        elements[name] = value
-        observers.forEach {
-            it.elementAdded(name, value, index)
-        }
-    }
-
-    /**
      * Removes a JSON Element from this JSON Object.
      */
     fun removeElement(name: String, index: Int) {
@@ -257,11 +247,10 @@ class JsonNull : JsonLeaf<Any?>(null) {
 }
 
 interface JsonObjectObserver {
-    fun elementRemoved(name: String) {}
+    //fun elementRemoved(name: String) {}
     fun elementRemoved(name: String, index: Int)
     fun elementAdded(name: String, value: JsonElement) {}
-    fun elementAdded(name: String, value: JsonElement, index: Int) {}
-    fun elementModified(name: String, newValue: JsonElement, index: Int) {}
+    fun elementModified(name: String, newValue: JsonElement, index: Int)
 }
 
 interface JsonArrayObserver {
