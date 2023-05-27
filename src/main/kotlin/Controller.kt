@@ -117,9 +117,9 @@ class Editor(private val model: JsonObject) {
         }
 
         editorView.addObserver(object : JsonEditorViewObserver {
-            override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement, index: Int) {
+            override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement) {
                 if(!modelObject.elements.containsKey(name)) {
-                    val cmd = AddToObjectCommand(modelObject, name, value, index)
+                    val cmd = AddToObjectCommand(modelObject, name, value)
                     runCommandAndUpdateStack(cmd)
                 }
             }
@@ -129,10 +129,10 @@ class Editor(private val model: JsonObject) {
                 runCommandAndUpdateStack(cmd)
             }
 
-            override fun elementRemovedFromObject(modelObject: JsonObject, name: String, index: Int) {
+            override fun elementRemovedFromObject(modelObject: JsonObject, name: String) {
                 val removedValue = modelObject.elements[name]
                 if(removedValue != null){
-                    val cmd = RemoveFromObjectCommand(modelObject, name, removedValue, index)
+                    val cmd = RemoveFromObjectCommand(modelObject, name, removedValue)
                     runCommandAndUpdateStack(cmd)
                 }
             }
@@ -145,15 +145,20 @@ class Editor(private val model: JsonObject) {
                 }
             }
 
-            override fun elementModifiedFromObject(name: String, newValue: JsonLeaf<*>, parent: JsonObject, index: Int) {
-                parent.modifyElement(name, newValue, index)
-                textView.refresh()
+            override fun elementModifiedInObject(modelObject: JsonObject, name: String, newValue: JsonLeaf<*>) {
+                val oldValue = modelObject.elements[name]
+                if(oldValue is JsonLeaf<*> && oldValue.value != newValue.value){
+                    val cmd = ModifyInObjectCommand(modelObject, name, oldValue, newValue)
+                    runCommandAndUpdateStack(cmd)
+                }
             }
 
-
-            override fun elementModifiedFromArray(index: Int, newValue: JsonLeaf<*>, parent: JsonArray) {
-                parent.modifyElement(index, newValue)
-                textView.refresh()
+            override fun elementModifiedInArray(modelArray: JsonArray, index: Int, newValue: JsonLeaf<*>) {
+                val oldValue = modelArray.elements[index]
+                if(oldValue is JsonLeaf<*> && oldValue.value != newValue.value){
+                    val cmd = ModifyInArrayCommand(modelArray, index, oldValue, newValue)
+                    runCommandAndUpdateStack(cmd)
+                }
             }
         })
     }
@@ -167,13 +172,13 @@ class Editor(private val model: JsonObject) {
         fun undo()
     }
 
-    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement, private val index: Int): Command {
+    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement): Command {
         override fun run() {
             model.addElement(name, value)
         }
 
         override fun undo() {
-            model.removeElement(name, index)
+            model.removeElement(name)
         }
     }
 
@@ -187,10 +192,10 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement, private val index: Int): Command {
+    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement): Command {
 
         override fun run() {
-            model.removeElement(name, index)
+            model.removeElement(name)
         }
 
         override fun undo() {
@@ -206,7 +211,26 @@ class Editor(private val model: JsonObject) {
         override fun undo() {
             model.addElement(removedvalue, index)
         }
+    }
 
+    class ModifyInObjectCommand(private val model: JsonObject, private val name: String, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>): Command {
+        override fun run() {
+            model.modifyElement(name, newValue)
+        }
+
+        override fun undo() {
+            model.modifyElement(name, oldValue)
+        }
+    }
+
+    class ModifyInArrayCommand(private val model: JsonArray, private val index: Int, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>): Command {
+        override fun run() {
+            model.modifyElement(index, newValue)
+        }
+
+        override fun undo() {
+            model.modifyElement(index, oldValue)
+        }
     }
 }
 

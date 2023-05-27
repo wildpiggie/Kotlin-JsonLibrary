@@ -336,25 +336,31 @@ class TestsJsonLibrary {
     }
 
     /**
-     * Tests the model observers, for adding...
+     * Tests the model observers, for adding, removing and modifying JSON Objects and Arrays.
      */
     @Test
     fun testObservers() {
         var objectElementAddedObserved = false
         var objectElementRemovedObserved = false
+        var objectElementModifiedObserved = false
         jobject.addObserver(object : JsonObjectObserver {
-            override fun elementRemoved(name: String) {
+            override fun elementRemoved(name: String, index: Int) {
                 objectElementRemovedObserved = true
             }
 
-            override fun elementAdded(name: String, value: JsonElement) {
+            override fun elementAdded(name: String, value: JsonElement, index: Int) {
                 objectElementAddedObserved = true
+            }
+
+            override fun elementModified(name: String, newValue: JsonElement, index: Int) {
+                objectElementModifiedObserved = true
             }
         })
 
         var arrayElementAddedObserved = false
         var arrayElementRemovedObserved = false
         var arrayElementAddedAtIndexObserved = false
+        var arrayElementModifiedObserved = false
         studentArray.addObserver(object : JsonArrayObserver {
             override fun elementRemoved(index: Int) {
                 arrayElementRemovedObserved = true
@@ -367,6 +373,10 @@ class TestsJsonLibrary {
             override fun elementAdded(value: JsonElement, index: Int) {
                 arrayElementAddedAtIndexObserved = true
             }
+
+            override fun elementModified(index: Int, newValue: JsonElement) {
+                arrayElementModifiedObserved = true
+            }
         })
 
         jobject.addElement("JsonNull", JsonNull())
@@ -376,6 +386,12 @@ class TestsJsonLibrary {
         assertTrue(objectElementAddedObserved)
         assertTrue(arrayElementAddedObserved)
         assertTrue(arrayElementAddedAtIndexObserved)
+
+        jobject.modifyElement("JsonNull", JsonBoolean(true))
+        studentArray.modifyElement(0, JsonBoolean(true))
+
+        assertTrue(objectElementModifiedObserved)
+        assertTrue(arrayElementModifiedObserved)
 
         jobject.removeElement("JsonNull")
         studentArray.removeElement(studentArray.elements.lastIndex)
