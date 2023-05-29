@@ -1,3 +1,5 @@
+package jsonLibrary
+
 interface Visitor {
 
     /**
@@ -21,11 +23,18 @@ interface Visitor {
     fun endVisit(jsonComposite: JsonComposite) {}
 }
 
+/**
+ * This interface represents any type of JSON Element.
+ */
 interface JsonElement {
     fun accept(visitor: Visitor) {}
     fun accept(visitor: Visitor, name: String): Boolean = true
 }
 
+/**
+ * This abstract class represents any type of composite JSON Element.
+ * Namely: JSON Objects and JSON Arrays.
+ */
 abstract class JsonComposite : JsonElement
 
 abstract class JsonLeaf<T>(val value: T) : JsonElement {
@@ -43,12 +52,13 @@ abstract class JsonLeaf<T>(val value: T) : JsonElement {
     }
 }
 
-class JsonObject() : JsonComposite() {
+/**
+ * Class representing JSON Objects as JSON Elements.
+ */
+class JsonObject : JsonComposite() {
 
     val elements = mutableMapOf<String, JsonElement>()
 
-    //para poder declarar aqui assim como por o addObserver também aqui foi necessário
-    //colocar como objeto público, caso contrário temos que repetir o código nas classes filho.
     private val observers: MutableList<JsonObjectObserver> = mutableListOf()
 
     fun addObserver(observer: JsonObjectObserver) {
@@ -126,7 +136,10 @@ class JsonObject() : JsonComposite() {
     }
 }
 
-class JsonArray() : JsonComposite() {
+/**
+ * Class representing JSON Arrays as JSON Elements.
+ */
+class JsonArray : JsonComposite() {
     val elements = mutableListOf<JsonElement>()
 
     private val observers: MutableList<JsonArrayObserver> = mutableListOf()
@@ -249,16 +262,23 @@ class JsonNull : JsonLeaf<Any?>(null) {
     }
 }
 
+/**
+ * This interface allows for the creation of an observer to detect if a certain JSON Object has been altered.
+ * It can track if an object has been added, removed, or modified.
+ */
 interface JsonObjectObserver {
-    //fun elementRemoved(name: String) {}
-    fun elementRemoved(name: String, index: Int)
     fun elementAdded(name: String, value: JsonElement, index: Int)
+    fun elementRemoved(name: String, index: Int)
     fun elementModified(name: String, newValue: JsonElement, index: Int)
 }
 
+/**
+ * This interface allows for the creation of an observer to detect if a certain JSON Array has been altered.
+ * It can track if an object has been added (to a specific index or to the end of the array), removed, or modified.
+ */
 interface JsonArrayObserver {
-    fun elementRemoved(index: Int)
     fun elementAdded(value: JsonElement)
     fun elementAdded(value: JsonElement, index: Int)
+    fun elementRemoved(index: Int)
     fun elementModified(index: Int, newValue: JsonElement)
 }

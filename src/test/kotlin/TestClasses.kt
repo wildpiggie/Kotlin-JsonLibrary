@@ -1,3 +1,7 @@
+import jsonLibrary.JsonAsString
+import jsonLibrary.JsonExclude
+import jsonLibrary.JsonName
+
 /*
  * Custom classes and enums to be used in testing.
  */

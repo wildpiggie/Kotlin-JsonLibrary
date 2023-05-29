@@ -1,3 +1,5 @@
+package jsonLibrary
+
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.*
@@ -285,7 +287,7 @@ private val KClass<*>.dataClassFields: List<KProperty<*>>
  * Excludes a property from being instantiated.
  */
 @Target(AnnotationTarget.PROPERTY)
-annotation class JsonExclude()
+annotation class JsonExclude
 
 /**
  * Sets a custom [name] for the json element of a certain property,
@@ -298,38 +300,4 @@ annotation class JsonName(val name: String)
  * Forces a certain property to be considered a string when instantiating the corresponding JSON Object.
  */
 @Target(AnnotationTarget.PROPERTY)
-annotation class JsonAsString()
-
-fun main() {
-    val jobject = JsonObject()
-    jobject.addElement("uc", JsonString("PA"))
-    jobject.addElement("ects", JsonNumber(6.0))
-    jobject.addElement("data-exame", JsonNull())
-    val jarray = JsonArray()
-    jobject.addElement("inscritos", jarray)
-
-    val jobject2 = JsonObject()
-    jarray.addElement(jobject2)
-    jobject2.addElement("numero", JsonNumber(101101))
-    jobject2.addElement("nome", JsonString("Dave Farley"))
-    jobject2.addElement("internacional", JsonBoolean(true))
-
-    val jobject3 = JsonObject()
-    jarray.addElement(jobject3)
-    jobject3.addElement("numero", JsonNumber(101102))
-    jobject3.addElement("nome", JsonString("Martin Fowler"))
-    jobject3.addElement("internacional", JsonBoolean(true))
-
-    val jobject4 = JsonObject()
-    jarray.addElement(jobject4)
-    jobject4.addElement("numero", JsonNumber(26503))
-    jobject4.addElement("nome", JsonString("André Santo"))
-    jobject4.addElement("internacional", JsonBoolean(false))
-
-    println(jobject.getStructure())
-
-    val jarray2 = JsonArray()
-    jarray2.addElement(JsonString("E1"))
-    jarray2.addElement(JsonNumber(1))
-}
-
+annotation class JsonAsString

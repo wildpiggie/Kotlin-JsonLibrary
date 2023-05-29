@@ -1,7 +1,12 @@
+package editorApp
+
+import jsonLibrary.*
 import java.awt.BorderLayout
 import java.awt.Button
 import java.awt.Dimension
 import java.awt.GridLayout
+import java.io.File
+import javax.imageio.ImageIO
 import javax.swing.*
 
 
@@ -27,11 +32,13 @@ fun main() {
     student2.addElement("nome", JsonString("Martin Fowler"))
     student2.addElement("internacional", JsonBoolean(true))
 
-    student1.addElement("A", student2)
+    val student3 = JsonObject()
+    studentArray.addElement(student3)
+    student3.addElement("numero", JsonNumber(26503))
+    student3.addElement("nome", JsonString("André Santos"))
+    student3.addElement("internacional", JsonBoolean(false))
 
     Editor(model).open()
-
-    //GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames().forEach { print(it) }
 }
 
 class Editor(private val model: JsonObject) {
@@ -43,10 +50,9 @@ class Editor(private val model: JsonObject) {
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         size = Dimension(800, 800)
 
+        iconImage = ImageIO.read(File(System.getProperty("user.dir") + "/src/main/kotlin/editorApp/icon.png"))
+
         layout = BorderLayout()
-
-        //font = Font("MS Consolas", Font.PLAIN, 50) //não funciona
-
 
         val textView = JsonTextView(model)
         val editorView = JsonEditorView(model)
@@ -54,6 +60,7 @@ class Editor(private val model: JsonObject) {
         val editorAndViewerPanel = object: JPanel() {
             init {
                 layout = GridLayout(0, 2)
+
                 val left = JPanel()
                 left.layout = GridLayout()
                 val scrollPane = JScrollPane(editorView).apply {
@@ -61,12 +68,11 @@ class Editor(private val model: JsonObject) {
                     verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
                 }
                 left.add(scrollPane)
+                add(left)
 
                 val right = JPanel()
                 right.layout = GridLayout()
                 right.add(textView)
-
-                add(left)
                 add(right)
             }
         }
@@ -95,7 +101,6 @@ class Editor(private val model: JsonObject) {
         redoButton.isEnabled = false
 
         val toolbar = JToolBar()
-
         toolbar.add(undoButton)
         toolbar.add(redoButton)
         add(toolbar, BorderLayout.PAGE_START)
@@ -118,13 +123,14 @@ class Editor(private val model: JsonObject) {
 
         editorView.addObserver(object : JsonEditorViewObserver {
             override fun elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement) {
+                // Elements cannot be added if they already exist in the object.
                 if(!modelObject.elements.containsKey(name)) {
                     val cmd = AddToObjectCommand(modelObject, name, value)
                     runCommandAndUpdateStack(cmd)
                 }
             }
 
-            override fun elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int) {
+            override fun elementAddedToArray(modelArray: JsonArray, index: Int, value: JsonElement) {
                 val cmd = AddToArrayCommand(modelArray, value, index)
                 runCommandAndUpdateStack(cmd)
             }
@@ -147,6 +153,7 @@ class Editor(private val model: JsonObject) {
 
             override fun elementModifiedInObject(modelObject: JsonObject, name: String, newValue: JsonLeaf<*>) {
                 val oldValue = modelObject.elements[name]
+                // The interface only allows JsonLeaf values to be modified to other JsonLeafs.
                 if(oldValue is JsonLeaf<*> && oldValue.value != newValue.value){
                     val cmd = ModifyInObjectCommand(modelObject, name, oldValue, newValue)
                     runCommandAndUpdateStack(cmd)
@@ -155,6 +162,7 @@ class Editor(private val model: JsonObject) {
 
             override fun elementModifiedInArray(modelArray: JsonArray, index: Int, newValue: JsonLeaf<*>) {
                 val oldValue = modelArray.elements[index]
+                // The interface only allows JsonLeaf values to be modified to other JsonLeafs.
                 if(oldValue is JsonLeaf<*> && oldValue.value != newValue.value){
                     val cmd = ModifyInArrayCommand(modelArray, index, oldValue, newValue)
                     runCommandAndUpdateStack(cmd)
@@ -172,7 +180,8 @@ class Editor(private val model: JsonObject) {
         fun undo()
     }
 
-    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement): Command {
+    class AddToObjectCommand(private val model: JsonObject, private val name: String, private val value: JsonElement):
+        Command {
         override fun run() {
             model.addElement(name, value)
         }
@@ -182,7 +191,8 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class AddToArrayCommand(private val model: JsonArray, private val value: JsonElement, private val index: Int): Command {
+    class AddToArrayCommand(private val model: JsonArray, private val value: JsonElement, private val index: Int):
+        Command {
         override fun run() {
             model.addElement(value, index)
         }
@@ -192,7 +202,8 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement): Command {
+    class RemoveFromObjectCommand(private val model: JsonObject, private val name: String, private val removedValue: JsonElement):
+        Command {
 
         override fun run() {
             model.removeElement(name)
@@ -203,7 +214,8 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class RemoveFromArrayCommand(private val model: JsonArray, private val index: Int, private val removedvalue: JsonElement): Command {
+    class RemoveFromArrayCommand(private val model: JsonArray, private val index: Int, private val removedvalue: JsonElement):
+        Command {
         override fun run() {
             model.removeElement(index)
         }
@@ -213,7 +225,8 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class ModifyInObjectCommand(private val model: JsonObject, private val name: String, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>): Command {
+    class ModifyInObjectCommand(private val model: JsonObject, private val name: String, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>):
+        Command {
         override fun run() {
             model.modifyElement(name, newValue)
         }
@@ -223,7 +236,8 @@ class Editor(private val model: JsonObject) {
         }
     }
 
-    class ModifyInArrayCommand(private val model: JsonArray, private val index: Int, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>): Command {
+    class ModifyInArrayCommand(private val model: JsonArray, private val index: Int, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>):
+        Command {
         override fun run() {
             model.modifyElement(index, newValue)
         }
@@ -233,9 +247,3 @@ class Editor(private val model: JsonObject) {
         }
     }
 }
-
-
-
-
-
-

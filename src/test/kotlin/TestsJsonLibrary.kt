@@ -1,3 +1,4 @@
+import jsonLibrary.*
 import org.junit.jupiter.api.Test
 import kotlin.test.*
 
@@ -340,61 +341,83 @@ class TestsJsonLibrary {
      */
     @Test
     fun testObservers() {
+        val elementToAdd = JsonNull()
+        val nameOfAddedElement = "name"
+        // JSON Objects always append
+        val expectedIndexInObject = 4
+        val modifiedElementToAdd = JsonBoolean(true)
+
         var objectElementAddedObserved = false
         var objectElementRemovedObserved = false
         var objectElementModifiedObserved = false
         jobject.addObserver(object : JsonObjectObserver {
-            override fun elementRemoved(name: String, index: Int) {
-                objectElementRemovedObserved = true
-            }
-
             override fun elementAdded(name: String, value: JsonElement, index: Int) {
                 objectElementAddedObserved = true
+                assertEquals(nameOfAddedElement, name)
+                assertEquals(elementToAdd, value)
+                assertEquals(expectedIndexInObject, index)
+            }
+
+            override fun elementRemoved(name: String, index: Int) {
+                objectElementRemovedObserved = true
+                assertEquals(nameOfAddedElement, name)
+                assertEquals(expectedIndexInObject, index)
             }
 
             override fun elementModified(name: String, newValue: JsonElement, index: Int) {
                 objectElementModifiedObserved = true
+                assertEquals(nameOfAddedElement, name)
+                assertEquals(modifiedElementToAdd, newValue)
+                assertEquals(expectedIndexInObject, index)
             }
         })
+
+        val indexInArray = 0
 
         var arrayElementAddedObserved = false
         var arrayElementRemovedObserved = false
         var arrayElementAddedAtIndexObserved = false
         var arrayElementModifiedObserved = false
         studentArray.addObserver(object : JsonArrayObserver {
-            override fun elementRemoved(index: Int) {
-                arrayElementRemovedObserved = true
-            }
-
             override fun elementAdded(value: JsonElement) {
                 arrayElementAddedObserved = true
+                assertEquals(elementToAdd, value)
             }
 
             override fun elementAdded(value: JsonElement, index: Int) {
                 arrayElementAddedAtIndexObserved = true
+                assertEquals(elementToAdd, value)
+                assertEquals(indexInArray, index)
+            }
+
+            override fun elementRemoved(index: Int) {
+                arrayElementRemovedObserved = true
+                assertEquals(indexInArray, index)
             }
 
             override fun elementModified(index: Int, newValue: JsonElement) {
                 arrayElementModifiedObserved = true
+                assertEquals(modifiedElementToAdd, newValue)
+                assertEquals(indexInArray, index)
             }
         })
 
-        jobject.addElement("JsonNull", JsonNull())
-        studentArray.addElement(JsonNull())
-        studentArray.addElement(JsonNull(),0)
+        jobject.addElement(nameOfAddedElement, elementToAdd)
+        studentArray.addElement(elementToAdd)
+        studentArray.addElement(elementToAdd,indexInArray)
 
         assertTrue(objectElementAddedObserved)
         assertTrue(arrayElementAddedObserved)
         assertTrue(arrayElementAddedAtIndexObserved)
 
-        jobject.modifyElement("JsonNull", JsonBoolean(true))
-        studentArray.modifyElement(0, JsonBoolean(true))
+        jobject.modifyElement(nameOfAddedElement, modifiedElementToAdd)
+        studentArray.modifyElement(indexInArray, modifiedElementToAdd)
 
         assertTrue(objectElementModifiedObserved)
         assertTrue(arrayElementModifiedObserved)
 
-        jobject.removeElement("JsonNull")
-        studentArray.removeElement(studentArray.elements.lastIndex)
+        jobject.removeElement(nameOfAddedElement)
+        studentArray.removeElement(indexInArray)
 
         assertTrue(objectElementRemovedObserved)
         assertTrue(arrayElementRemovedObserved)
