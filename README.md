@@ -44,8 +44,8 @@ To represent JSON data, the library follows a strongly-typed approach with class
 
 Note that the names of JSON elements are only stored in their corresponding JSON Objects.
 
-There are two distinct types of JSON elements in the library: leaf and composite. While a leaf contains a value of a certain type (String, Number, Boolean, Null) 
-the composites (Object, Array) contain references to other JSON elements. In the case of JSON Objects each element has an associated name.
+There are two distinct types of JSON elements in the library: Leaf and Composite. While a Leaf contains a value of a certain type (String, Number, Boolean, Null) 
+the Composites (Object, Array) contain references to other JSON elements. In the case of JSON Objects each element has an associated name.
 
 ## Usage
 
