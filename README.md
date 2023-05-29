@@ -149,4 +149,40 @@ If, for example, you want to visit every element with reference to its name, you
 
 ### Observers
 
-TODO
+This library makes use of the Observer Pattern. This pattern utilizes an interface where each operation represents the reactions to observable operations. When an observable operation is executed, the model notifies all the observers by invoking an operation from the interface.
+
+An example of an interface is the JsonEditorViewObserver. This interface has the following methods to notify the model about the changes made in the Editor UI:
+- `elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement)`
+- `elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int)`
+- `elementRemovedFromObject(modelObject: JsonObject, name: String)`
+- `elementRemovedFromArray(modelArray: JsonArray, index: Int)`
+- `elementModifiedInObject(modelObject: JsonObject, name: String, newValue: JsonLeaf<*>)`
+- `elementModifiedInArray(modelArray: JsonArray, index: Int, newValue: JsonLeaf<*>)`
+
+When a value associated with a propriety in a JsonObject is changed in the Editor View the `JsonEditorViewObserver.elementModifiedInObject()` method is called. This method is responsible for notifying the Controller, which is observing the Editor View through the `JsonEditorViewObserver` interface , about the change.
+
+Once notified, the Controller can then notify the JsonObject model about the change made.
+
+```kotlin
+editorView.addObserver(object : JsonEditorViewObserver {
+  override fun elementModifiedInObject(modelObject: JsonObject, name: String, newValue: JsonLeaf<*>) {
+    val oldValue = modelObject.elements[name]
+    if(oldValue is JsonLeaf<*> && oldValue.value != newValue.value) {
+      val cmd = ModifyInObjectCommand(modelObject, name, oldValue, newValue)
+      runCommandAndUpdateStack(cmd)
+    }
+  }
+})
+```
+Where:
+```kotlin
+class ModifyInObjectCommand(private val model: JsonObject, private val name: String, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>): Command {
+  override fun run() {
+    model.modifyElement(name, newValue)
+  }
+  
+  override fun undo() {
+     model.modifyElement(name, oldValue)
+  }
+}
+```
