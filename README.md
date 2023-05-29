@@ -1,6 +1,6 @@
 # Kotlin JsonLibrary
 
-**A kotlin library for the creation and manipulation of JSON Objects, instantiation through reflection, and textual serialization**
+**A Kotlin library for the creation and manipulation of JSON Objects, instantiation through reflection, and textual serialization**
 
 [JSON](https://www.json.org/json-en.html) (JavaScript Object Notation) is a lightweight data-interchange format. It is easy for humans to read and write. 
 It is easy for machines to parse and generate.
@@ -33,7 +33,7 @@ JSON Example:
 
 ## Model
 
-To represent JSON data, the library follows a strongly-typed approach with classes (prefixed with "Json") representing the different types of JSON elements:
+To represent JSON data, the library follows a strongly typed approach with classes (prefixed with "Json") representing the different types of JSON elements:
 
 - Object
 - Array
@@ -44,8 +44,8 @@ To represent JSON data, the library follows a strongly-typed approach with class
 
 Note that the names of JSON elements are only stored in their corresponding JSON Objects.
 
-There are two distinct types of JSON elements in the library: Leaf and Composite. While a Leaf contains a value of a certain type (String, Number, Boolean, Null) 
-the Composites (Object, Array) contain references to other JSON elements. In the case of JSON Objects each element has an associated name.
+There are two distinct types of JSON elements in the library: Leaf and Composite elements. While a Leaf contains a value of a certain type (String, Number, Boolean, or Null) 
+the Composites (Object or Array) contain references to other JSON elements. In the case of JSON Objects each element has an associated name.
 
 ## Usage
 
@@ -68,13 +68,13 @@ The creation of JSON Arrays is done in the same way as the JSON Objects with the
 val array = JsonArray()
 object.addElement("inscritos", array)
 
-//Creating an object for the array: 
+// Creating an object for the array: 
 val student = JsonObject()
 student.addElement("numero", JsonNumber(101101))
 student.addElement("nome", JsonString("Dave Farley"))
 student.addElement("internacional", JsonBoolean(true))
 
-//Adding the object to the array
+// Adding the object to the array
 array.addElement(student)
 ```
 
@@ -115,19 +115,18 @@ For the instance given by `exampleClass("excluded", true, 6)`, using the `toJson
 
 ### Visitors
 
-This library's classes support visitors. Visitors allow us to perform an operation on a group of objects by visiting every object in a given hierarchy.
+This library's classes support visitors. Visitors allow us to perform an operation on a group of JSON Elements by visiting every element in a given hierarchy.
 The following methods exist in the visitor interface:
 - `visit(jsonLeaf: JsonLeaf<*>)` : Visits JSON Leaf elements.
 - `visit(jsonComposite: JsonComposite)` : Visits JSON Composite elements.
 - `visit(name: String, jsonElement: JsonElement): Boolean` : Visits JSON Elements with knowledge of their associated property names.
-- `endVisit(jsonComposite: JsonComposite)` : Used to indicate the that a visitor is ending its visit of a certain composite.
+- `endVisit(jsonComposite: JsonComposite)` : Used to indicate that a visitor is ending its visit of a certain composite.
 
 And all JSON elements have the following methods to accept visitors:
 - `accept(visitor: Visitor)`
 - `accept(visitor: Visitor, name: String): Boolean`
 
-`JsonObject.getValuesOfProperty(propertyName: String): List<JsonElement>` is a method in the JSON library that obtains a list of JSON element with the given name, inside a certain jsonObject.
-This method is implemented using visitors: 
+The library also contains methods that use these visitors to search through the JSON Object hierarchy. `JsonObject.getValuesOfProperty(propertyName: String): List<JsonElement>` is one of these methods, it obtains a list of JSON elements with the given name, inside a certain JsonObject: 
 
 ```kotlin
 fun JsonObject.getJsonObjectWithProperties(properties: List<String>): List<JsonObject> {
@@ -149,40 +148,55 @@ If, for example, you want to visit every element with reference to its name, you
 
 ### Observers
 
-This library makes use of the Observer Pattern. This pattern utilizes an interface where each operation represents the reactions to observable operations. When an observable operation is executed, the model notifies all the observers by invoking an operation from the interface.
+This library makes use of the observer pattern. This pattern utilizes an interface where each method represents a reaction to observable operations. When an observable operation is executed, the model notifies all the observers by invoking the corresponding operation.
+Observers are commonly used in graphical applications to update the interface whenever necessary. The Editor App included in this library is heavily dependent on observers as it follows the Model-View-Controller pattern.
 
-An example of an interface is the JsonEditorViewObserver. This interface has the following methods to notify the model about the changes made in the Editor UI:
-- `elementAddedToObject(modelObject: JsonObject, name: String, value: JsonElement)`
-- `elementAddedToArray(modelArray: JsonArray, value: JsonElement, index: Int)`
-- `elementRemovedFromObject(modelObject: JsonObject, name: String)`
-- `elementRemovedFromArray(modelArray: JsonArray, index: Int)`
-- `elementModifiedInObject(modelObject: JsonObject, name: String, newValue: JsonLeaf<*>)`
-- `elementModifiedInArray(modelArray: JsonArray, index: Int, newValue: JsonLeaf<*>)`
-
-When a value associated with a propriety in a JsonObject is changed in the Editor View the `JsonEditorViewObserver.elementModifiedInObject()` method is called. This method is responsible for notifying the Controller, which is observing the Editor View through the `JsonEditorViewObserver` interface , about the change.
-
-Once notified, the Controller can then notify the JsonObject model about the change made.
+Both types of composite element (Object and Array) are observable by objects implementing their respective interfaces:
 
 ```kotlin
-editorView.addObserver(object : JsonEditorViewObserver {
-  override fun elementModifiedInObject(modelObject: JsonObject, name: String, newValue: JsonLeaf<*>) {
-    val oldValue = modelObject.elements[name]
-    if(oldValue is JsonLeaf<*> && oldValue.value != newValue.value) {
-      val cmd = ModifyInObjectCommand(modelObject, name, oldValue, newValue)
-      runCommandAndUpdateStack(cmd)
-    }
-  }
-})
-```
-Where:
-```kotlin
-class ModifyInObjectCommand(private val model: JsonObject, private val name: String, private val oldValue: JsonLeaf<*>, private val newValue: JsonLeaf<*>): Command {
-  override fun run() {
-    model.modifyElement(name, newValue)
-  }
-  
-  override fun undo() {
-     model.modifyElement(name, oldValue)
-  }
+interface JsonObjectObserver {
+    fun elementAdded(name: String, value: JsonElement, index: Int)
+    fun elementRemoved(name: String, index: Int)
+    fun elementModified(name: String, newValue: JsonElement, index: Int)
+}
+
+interface JsonArrayObserver {
+    fun elementAdded(value: JsonElement)
+    fun elementAdded(value: JsonElement, index: Int)
+    fun elementRemoved(index: Int)
+    fun elementModified(index: Int, newValue: JsonElement)
 }
 ```
+
+The methods of the objects implementing this interface are invoked when the respective actions occur.
+As an example, the Editor App requires that its presented values are updated whenever a change occurs in the model. To do so, we create an observer that checks for any such changes and takes the appropriate steps:
+
+```kotlin
+object.addObserver(object : JsonObjectObserver {
+    override fun elementAdded(name: String, value: JsonElement, index: Int) {
+        // These methods are responsible for adding an UI element to the interface.
+        add(ObjectElementWidget(name, value), index)
+        revalidate()
+        repaint()
+    }
+
+    override fun elementModified(name: String, newValue: JsonElement, index: Int) {
+        // These methods are responsible for changing an UI element in the interface.
+        remove(this@JsonObjectWidget.getComponent(index))
+        add(ObjectElementWidget(name, newValue), index)
+        revalidate()
+        repaint()
+    }
+
+    override fun elementRemoved(name: String, index: Int) {
+        // These methods are responsible for removing an UI element to the interface.
+        remove(this@JsonObjectWidget.getComponent(index))
+        revalidate()
+        repaint()
+    }
+})
+```
+
+These methods will execute whenever an element is, respectively, added, modified, or removed from the JSON Object `object`.
+
+### For further information please refer to the documentation present in the library's implementation.
