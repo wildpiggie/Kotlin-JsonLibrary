@@ -267,9 +267,12 @@ class JsonNull : JsonLeaf<Any?>(null) {
  * It can track if an object has been added, removed, or modified.
  */
 interface JsonObjectObserver {
-    fun elementAdded(name: String, value: JsonElement, index: Int)
-    fun elementRemoved(name: String, index: Int)
-    fun elementModified(name: String, newValue: JsonElement, index: Int)
+    /** Method invoked when a new element is added to the object. */
+    fun elementAdded(name: String, value: JsonElement, index: Int) {}
+    /** Method invoked when an element is removed from the object */
+    fun elementRemoved(name: String, index: Int) {}
+    /** Method invoked when an element is modified in the object */
+    fun elementModified(name: String, newValue: JsonElement, index: Int) {}
 }
 
 /**
@@ -277,8 +280,12 @@ interface JsonObjectObserver {
  * It can track if an object has been added (to a specific index or to the end of the array), removed, or modified.
  */
 interface JsonArrayObserver {
-    fun elementAdded(value: JsonElement)
-    fun elementAdded(value: JsonElement, index: Int)
-    fun elementRemoved(index: Int)
-    fun elementModified(index: Int, newValue: JsonElement)
+    /** Method invoked when a new element is added to the end of the array. */
+    fun elementAdded(value: JsonElement) {}
+    /** Method invoked when a new element is added to the array at [index]. */
+    fun elementAdded(value: JsonElement, index: Int) {}
+    /** Method invoked when an element is removed from the array */
+    fun elementRemoved(index: Int) {}
+    /** Method invoked when an element is modified in the array */
+    fun elementModified(index: Int, newValue: JsonElement) {}
 }

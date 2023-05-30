@@ -259,11 +259,11 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             }
 
             layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            border = BorderFactory.createLineBorder(Color.DARK_GRAY, 5)
+            border = BorderFactory.createLineBorder(Color.GRAY, 5)
 
             addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
-                    onMouseClicked(e)
+                    onMouseClickedInArray(e)
                 }
             })
 
@@ -312,7 +312,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
             }
         }
 
-        private fun onMouseClicked(e: MouseEvent, widget: ArrayElementWidget? = null){
+        private fun onMouseClickedInArray(e: MouseEvent, widget: ArrayElementWidget? = null){
             grabFocus()
             var index = 0
 
@@ -372,7 +372,7 @@ class JsonEditorView(model: JsonObject) : JPanel() {
 
                 addMouseListener(object : MouseAdapter() {
                     override fun mouseClicked(e: MouseEvent) {
-                        onMouseClicked(e, this@ArrayElementWidget)
+                        onMouseClickedInArray(e, this@ArrayElementWidget)
                     }
                 })
 
